@@ -72,7 +72,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               <Building2 className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">MissãoDesign</h1>
+              <h1 className="text-lg font-bold">Gestfin</h1>
               <p className="text-xs text-blue-200">Gestão Financeira</p>
             </div>
           </div>
@@ -135,7 +135,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           {/* Footer */}
           <div className="border-t border-blue-700 p-4">
             <p className="text-xs text-blue-200 text-center">
-              © 2024 MissãoDesign
+              © 2024 Gestfin
             </p>
           </div>
         </div>
