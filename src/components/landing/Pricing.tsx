@@ -11,7 +11,7 @@ const plans = [
     period: '/mês',
     description: 'Perfeito para começar',
     features: [
-      'Até 50 transações por mês',
+      'Até 25 transações por mês',
       'Dashboard básico',
       'Categorização simples',
       'Relatórios básicos',
@@ -22,7 +22,7 @@ const plans = [
   },
   {
     name: 'Profissional',
-    price: 'R$ 29',
+    price: '9,99 €',
     period: '/mês',
     description: 'Para pequenas empresas',
     features: [
@@ -39,7 +39,7 @@ const plans = [
   },
   {
     name: 'Empresarial',
-    price: 'R$ 99',
+    price: '49,99 €',
     period: '/mês',
     description: 'Para empresas em crescimento',
     features: [

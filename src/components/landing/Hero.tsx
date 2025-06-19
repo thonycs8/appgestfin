@@ -56,7 +56,7 @@ export function Hero() {
                 <div className="text-sm text-gray-600">Usuários Ativos</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">R$ 50M+</div>
+                <div className="text-2xl font-bold text-gray-900">€ 50M+</div>
                 <div className="text-sm text-gray-600">Gerenciados</div>
               </div>
             </div>
@@ -99,7 +99,7 @@ export function Hero() {
                     <div className="text-sm text-green-600">Receitas</div>
                   </div>
                   <div className="bg-red-50 p-4 rounded-lg">
-                    <div className="text-lg font-bold text-red-700">R$ 28.1k</div>
+                    <div className="text-lg font-bold text-red-700">€ 28.1k</div>
                     <div className="text-sm text-red-600">Despesas</div>
                   </div>
                 </div>
