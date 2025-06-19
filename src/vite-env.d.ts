@@ -1,1 +1,3 @@
 /// <reference types="vite/client" />
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_cmVndWxhci1tYXlmbHktODguY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=sk_test_882CBkw2YOJJkvmSDwJ47XTzMQGIzGZk0ejMk5uu7v
