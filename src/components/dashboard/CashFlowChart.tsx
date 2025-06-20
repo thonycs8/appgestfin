@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { formatCurrency } from '@/lib/i18n';
 
 const cashFlowData = [
   { month: 'Jan', empresa: 12000, familia: 6500 },
@@ -22,7 +23,7 @@ export function CashFlowChart() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
-            <Tooltip formatter={(value) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Valor']} />
+            <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Valor']} />
             <Legend />
             <Line 
               type="monotone" 

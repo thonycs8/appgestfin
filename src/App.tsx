@@ -12,6 +12,8 @@ import { Categories } from '@/pages/Categories';
 import { Management } from '@/pages/Management';
 import { AdminUsers } from '@/pages/AdminUsers';
 import { AdminSystem } from '@/pages/AdminSystem';
+import { AppProvider } from '@/contexts/AppContext';
+import { ThemeProvider } from '@/components/ui/theme-provider';
 import './App.css';
 
 const pageComponents = {
@@ -29,7 +31,7 @@ const pageComponents = {
 
 const pageTitles = {
   dashboard: 'Dashboard',
-  income: 'Entradas',
+  income: 'Receitas',
   expenses: 'Despesas',
   cashflow: 'Fluxo de Caixa',
   categories: 'Categorias',
@@ -51,37 +53,41 @@ function App() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      <SignedOut>
-        <LandingPage />
-      </SignedOut>
+    <ThemeProvider defaultTheme="system" storageKey="gestfin-ui-theme">
+      <AppProvider>
+        <>
+          <SignedOut>
+            <LandingPage />
+          </SignedOut>
 
-      <SignedIn>
-        <ProtectedRoute requireAdmin={isAdminPage}>
-          <div className="flex h-screen bg-gray-50">
-            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-            
-            <div className="flex-1 flex flex-col md:ml-64">
-              <Header title={pageTitle} />
-              
-              <main className="flex-1 overflow-y-auto p-6">
-                <PageComponent />
-              </main>
-            </div>
-          </div>
-        </ProtectedRoute>
-      </SignedIn>
-    </>
+          <SignedIn>
+            <ProtectedRoute requireAdmin={isAdminPage}>
+              <div className="flex h-screen bg-background">
+                <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+                
+                <div className="flex-1 flex flex-col md:ml-64">
+                  <Header title={pageTitle} />
+                  
+                  <main className="flex-1 overflow-y-auto p-6">
+                    <PageComponent />
+                  </main>
+                </div>
+              </div>
+            </ProtectedRoute>
+          </SignedIn>
+        </>
+      </AppProvider>
+    </ThemeProvider>
   );
 }
 

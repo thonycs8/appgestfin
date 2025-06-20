@@ -22,9 +22,9 @@ export function MetricCard({ title, value, change, icon: Icon, color }: MetricCa
       <CardContent className="p-0">
         <div className="flex">
           <div className="flex-1 p-6">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-            <p className={`text-sm mt-2 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
+            <p className={`text-sm mt-2 ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {change >= 0 ? '+' : ''}{change}% vs mês anterior
             </p>
           </div>

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { formatCurrency } from '@/lib/i18n';
 
 interface CategoryChartProps {
   title: string;
@@ -33,7 +34,7 @@ export function CategoryChart({ title, data }: CategoryChartProps) {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Valor']} />
+            <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Valor']} />
             <Legend />
           </PieChart>
         </ResponsiveContainer>
