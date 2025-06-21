@@ -56,28 +56,28 @@ export function Dashboard() {
       {/* Métricas principais */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Receita Total"
+          title={t('totalRevenue')}
           value={formatCurrency(totalIncome)}
           change={8.2}
           icon={TrendingUp}
           color="green"
         />
         <MetricCard
-          title="Despesas Totais"
+          title={t('totalExpenses')}
           value={formatCurrency(totalExpenses)}
           change={-3.1}
           icon={TrendingDown}
           color="red"
         />
         <MetricCard
-          title="Lucro Líquido"
+          title={t('netProfit')}
           value={formatCurrency(netProfit)}
           change={12.5}
           icon={DollarSign}
           color="blue"
         />
         <MetricCard
-          title="Investimentos"
+          title={t('investments')}
           value={formatCurrency(35850)}
           change={5.4}
           icon={PiggyBank}
@@ -87,8 +87,8 @@ export function Dashboard() {
 
       {/* Gráficos de categoria */}
       <div className="grid gap-6 md:grid-cols-2">
-        <CategoryChart title="Despesas por Categoria" data={expensesByCategory} />
-        <CategoryChart title="Receitas por Categoria" data={incomesByCategory} />
+        <CategoryChart title={t('expensesByCategory')} data={expensesByCategory} />
+        <CategoryChart title={t('incomeByCategory')} data={incomesByCategory} />
       </div>
 
       {/* Fluxo de caixa */}
@@ -99,12 +99,12 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-red-700 dark:text-red-400">
-              Contas Vencidas ({overduePayables.length})
+              {t('overdueAccounts')} ({overduePayables.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {overduePayables.length === 0 ? (
-              <p className="text-muted-foreground">Nenhuma conta vencida</p>
+              <p className="text-muted-foreground">{t('noOverdueAccounts')}</p>
             ) : (
               overduePayables.map((payable) => (
                 <div key={payable.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
@@ -124,7 +124,7 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-orange-700 dark:text-orange-400">
-              Próximos Vencimentos ({pendingPayables.length})
+              {t('upcomingDue')} ({pendingPayables.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -133,7 +133,7 @@ export function Dashboard() {
                 <div>
                   <p className="font-medium text-foreground">{payable.description}</p>
                   <p className="text-sm text-muted-foreground">
-                    Vence em {new Date(payable.dueDate).toLocaleDateString('pt-PT')}
+                    {t('dueIn')} {new Date(payable.dueDate).toLocaleDateString('pt-PT')}
                   </p>
                 </div>
                 <Badge variant="secondary">

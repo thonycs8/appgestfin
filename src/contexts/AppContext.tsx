@@ -37,7 +37,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({ children }: { children: ReactNode | ((context: { language: Language }) => ReactNode) }) {
   const [language, setLanguage] = useState<Language>('pt');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   
@@ -138,31 +138,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setInvestments(prev => prev.filter(i => i.id !== id));
   };
 
+  const contextValue = {
+    language,
+    setLanguage,
+    theme,
+    setTheme,
+    t,
+    transactions,
+    categories,
+    payables,
+    investments,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addPayable,
+    updatePayable,
+    deletePayable,
+    addInvestment,
+    updateInvestment,
+    deleteInvestment
+  };
+
   return (
-    <AppContext.Provider value={{
-      language,
-      setLanguage,
-      theme,
-      setTheme,
-      t,
-      transactions,
-      categories,
-      payables,
-      investments,
-      addTransaction,
-      updateTransaction,
-      deleteTransaction,
-      addCategory,
-      updateCategory,
-      deleteCategory,
-      addPayable,
-      updatePayable,
-      deletePayable,
-      addInvestment,
-      updateInvestment,
-      deleteInvestment
-    }}>
-      {children}
+    <AppContext.Provider value={contextValue}>
+      {typeof children === 'function' ? children({ language }) : children}
     </AppContext.Provider>
   );
 }

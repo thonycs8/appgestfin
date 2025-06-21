@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useApp } from '@/contexts/AppContext';
+import { formatCurrency } from '@/lib/i18n';
 import { mockPayables } from '@/lib/data';
 
 const statusColors = {
@@ -23,6 +25,8 @@ const statusIcons = {
 };
 
 export function Payables() {
+  const { t, language } = useApp();
+  
   const [newPayable, setNewPayable] = useState({
     description: '',
     amount: '',
@@ -38,6 +42,15 @@ export function Payables() {
   const totalOverdue = overduePayables.reduce((sum, p) => sum + p.amount, 0);
   const totalPending = pendingPayables.reduce((sum, p) => sum + p.amount, 0);
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return t('pending');
+      case 'paid': return t('paid');
+      case 'overdue': return t('overdue');
+      default: return status;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Resumo */}
@@ -48,11 +61,11 @@ export function Payables() {
               <AlertTriangle className="h-6 w-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Vencidas</p>
+              <p className="text-sm font-medium text-gray-600">{t('overdue')}</p>
               <p className="text-2xl font-bold text-red-700">
-                R$ {totalOverdue.toLocaleString('pt-BR')}
+                {formatCurrency(totalOverdue)}
               </p>
-              <p className="text-xs text-gray-500">{overduePayables.length} contas</p>
+              <p className="text-xs text-gray-500">{overduePayables.length} {t('accounts')}</p>
             </div>
           </CardContent>
         </Card>
@@ -63,11 +76,11 @@ export function Payables() {
               <Calendar className="h-6 w-6 text-yellow-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">A Vencer</p>
+              <p className="text-sm font-medium text-gray-600">{t('toPay')}</p>
               <p className="text-2xl font-bold text-yellow-700">
-                R$ {totalPending.toLocaleString('pt-BR')}
+                {formatCurrency(totalPending)}
               </p>
-              <p className="text-xs text-gray-500">{pendingPayables.length} contas</p>
+              <p className="text-xs text-gray-500">{pendingPayables.length} {t('accounts')}</p>
             </div>
           </CardContent>
         </Card>
@@ -78,12 +91,12 @@ export function Payables() {
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Geral</p>
+              <p className="text-sm font-medium text-gray-600">{t('totalGeneral')}</p>
               <p className="text-2xl font-bold text-gray-900">
-                R$ {(totalOverdue + totalPending).toLocaleString('pt-BR')}
+                {formatCurrency(totalOverdue + totalPending)}
               </p>
               <p className="text-xs text-gray-500">
-                {overduePayables.length + pendingPayables.length} contas ativas
+                {overduePayables.length + pendingPayables.length} {t('activeAccounts')}
               </p>
             </div>
           </CardContent>
@@ -93,37 +106,37 @@ export function Payables() {
       {/* Lista de Contas */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Contas a Pagar</CardTitle>
+          <CardTitle>{t('payables')}</CardTitle>
           <Dialog>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Conta
+                {t('newAccount')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Registrar Nova Conta</DialogTitle>
+                <DialogTitle>{t('registerNewAccount')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="description">Descrição</Label>
+                  <Label htmlFor="description">{t('description')}</Label>
                   <Input 
-                    placeholder="Ex: Aluguel, Financiamento..."
+                    placeholder={language === 'pt' ? 'Ex: Aluguel, Financiamento...' : 'Ex: Rent, Financing...'}
                     value={newPayable.description}
                     onChange={(e) => setNewPayable(prev => ({...prev, description: e.target.value}))}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="supplier">Fornecedor</Label>
+                  <Label htmlFor="supplier">{t('supplier')}</Label>
                   <Input 
-                    placeholder="Nome do fornecedor..."
+                    placeholder={t('supplierName')}
                     value={newPayable.supplier}
                     onChange={(e) => setNewPayable(prev => ({...prev, supplier: e.target.value}))}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="amount">Valor</Label>
+                  <Label htmlFor="amount">{t('amount')}</Label>
                   <Input 
                     type="number" 
                     placeholder="0,00"
@@ -132,7 +145,7 @@ export function Payables() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dueDate">Data de Vencimento</Label>
+                  <Label htmlFor="dueDate">{t('dueDate')}</Label>
                   <Input 
                     type="date"
                     value={newPayable.dueDate}
@@ -140,21 +153,21 @@ export function Payables() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="category">Categoria</Label>
+                  <Label htmlFor="category">{t('category')}</Label>
                   <Select value={newPayable.category} onValueChange={(value) => 
                     setNewPayable(prev => ({...prev, category: value}))
                   }>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
+                      <SelectValue placeholder={language === 'pt' ? 'Selecione a categoria' : 'Select category'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="empresa">Empresa</SelectItem>
-                      <SelectItem value="familia">Família</SelectItem>
+                      <SelectItem value="empresa">{t('company')}</SelectItem>
+                      <SelectItem value="familia">{t('family')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <Button className="w-full">
-                  Registrar Conta
+                  {t('registerAccount')}
                 </Button>
               </div>
             </DialogContent>
@@ -163,10 +176,10 @@ export function Payables() {
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">Todas</TabsTrigger>
-              <TabsTrigger value="overdue">Vencidas</TabsTrigger>
-              <TabsTrigger value="pending">A Vencer</TabsTrigger>
-              <TabsTrigger value="paid">Pagas</TabsTrigger>
+              <TabsTrigger value="all">{t('all')}</TabsTrigger>
+              <TabsTrigger value="overdue">{t('overdue')}</TabsTrigger>
+              <TabsTrigger value="pending">{t('toPay')}</TabsTrigger>
+              <TabsTrigger value="paid">{t('paid')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="all" className="space-y-4">
@@ -187,24 +200,23 @@ export function Payables() {
                         <p className="font-medium text-gray-900">{payable.description}</p>
                         <p className="text-sm text-gray-600">{payable.supplier}</p>
                         <p className="text-xs text-gray-500">
-                          Vence: {new Date(payable.dueDate).toLocaleDateString('pt-BR')}
+                          {t('dueOn')}: {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
                         </p>
                       </div>
                     </div>
                     <div className="text-right space-y-2">
                       <p className="text-lg font-bold text-gray-900">
-                        R$ {payable.amount.toLocaleString('pt-BR')}
+                        {formatCurrency(payable.amount)}
                       </p>
                       <div className="flex gap-2">
                         <Badge className={statusColors[payable.status]}>
                           <StatusIcon className="mr-1 h-3 w-3" />
-                          {payable.status === 'pending' ? 'Pendente' : 
-                           payable.status === 'paid' ? 'Paga' : 'Vencida'}
+                          {getStatusText(payable.status)}
                         </Badge>
                         <Badge variant="outline" className={`${
                           payable.category === 'empresa' ? 'border-blue-200 text-blue-700' : 'border-purple-200 text-purple-700'
                         }`}>
-                          {payable.category === 'empresa' ? 'Empresa' : 'Família'}
+                          {payable.category === 'empresa' ? t('company') : t('family')}
                         </Badge>
                       </div>
                     </div>
@@ -224,16 +236,16 @@ export function Payables() {
                       <p className="font-medium text-gray-900">{payable.description}</p>
                       <p className="text-sm text-gray-600">{payable.supplier}</p>
                       <p className="text-xs text-red-600 font-medium">
-                        Venceu em {new Date(payable.dueDate).toLocaleDateString('pt-BR')}
+                        {t('overdueOn')} {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-red-700">
-                      R$ {payable.amount.toLocaleString('pt-BR')}
+                      {formatCurrency(payable.amount)}
                     </p>
                     <Button size="sm" variant="destructive">
-                      Pagar Agora
+                      {t('payNow')}
                     </Button>
                   </div>
                 </div>
@@ -251,16 +263,16 @@ export function Payables() {
                       <p className="font-medium text-gray-900">{payable.description}</p>
                       <p className="text-sm text-gray-600">{payable.supplier}</p>
                       <p className="text-xs text-gray-500">
-                        Vence em {new Date(payable.dueDate).toLocaleDateString('pt-BR')}
+                        {t('dueOn')} {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-yellow-700">
-                      R$ {payable.amount.toLocaleString('pt-BR')}
+                      {formatCurrency(payable.amount)}
                     </p>
                     <Button size="sm" variant="secondary">
-                      Marcar como Pago
+                      {t('markAsPaid')}
                     </Button>
                   </div>
                 </div>
@@ -270,7 +282,7 @@ export function Payables() {
             <TabsContent value="paid" className="space-y-4">
               <div className="text-center py-8 text-gray-500">
                 <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                <p>Nenhuma conta paga encontrada</p>
+                <p>{t('noPaidAccounts')}</p>
               </div>
             </TabsContent>
           </Tabs>

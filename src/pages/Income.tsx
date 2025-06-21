@@ -111,7 +111,7 @@ export function Income() {
               <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-muted-foreground">Total Geral</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('totalGeneral')}</p>
               <p className="text-2xl font-bold text-foreground">
                 {formatCurrency(companyIncome + familyIncome)}
               </p>
@@ -151,7 +151,7 @@ export function Income() {
       {/* Lista de Entradas */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Entradas Recentes</CardTitle>
+          <CardTitle>{t('recentIncome')}</CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
@@ -165,13 +165,13 @@ export function Income() {
                 });
               }}>
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Entrada
+                {t('newIncome')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>
-                  {editingTransaction ? 'Editar Entrada' : 'Registrar Nova Entrada'}
+                  {editingTransaction ? t('editIncome') : t('newIncome')}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
@@ -181,7 +181,7 @@ export function Income() {
                     setNewIncome(prev => ({...prev, category: value, subcategory: ''}))
                   }>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o grupo" />
+                      <SelectValue placeholder={language === 'pt' ? 'Selecione o grupo' : 'Select group'} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="empresa">{t('company')}</SelectItem>
@@ -195,7 +195,7 @@ export function Income() {
                     setNewIncome(prev => ({...prev, subcategory: value}))
                   }>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
+                      <SelectValue placeholder={language === 'pt' ? 'Selecione a categoria' : 'Select category'} />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredCategories.map((category) => (
@@ -219,7 +219,7 @@ export function Income() {
                 <div>
                   <Label htmlFor="description">{t('description')}</Label>
                   <Input 
-                    placeholder="Descrição da entrada..."
+                    placeholder={t('incomeDescription')}
                     value={newIncome.description}
                     onChange={(e) => setNewIncome(prev => ({...prev, description: e.target.value}))}
                   />
@@ -236,7 +236,7 @@ export function Income() {
                   className="w-full bg-green-600 hover:bg-green-700"
                   onClick={editingTransaction ? handleUpdateTransaction : handleCreateIncome}
                 >
-                  {editingTransaction ? t('update') : 'Registrar Entrada'}
+                  {editingTransaction ? t('update') : t('registerIncome')}
                 </Button>
               </div>
             </DialogContent>
@@ -290,9 +290,9 @@ export function Income() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir Transação</AlertDialogTitle>
+                          <AlertDialogTitle>{language === 'pt' ? 'Excluir Transação' : 'Delete Transaction'}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
+                            {language === 'pt' ? 'Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.' : 'Are you sure you want to delete this transaction? This action cannot be undone.'}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

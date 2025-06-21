@@ -30,16 +30,30 @@ const pageComponents = {
 };
 
 const pageTitles = {
-  dashboard: 'Dashboard',
-  income: 'Receitas',
-  expenses: 'Despesas',
-  cashflow: 'Fluxo de Caixa',
-  categories: 'Categorias',
-  payables: 'Contas a Pagar',
-  investments: 'Investimentos',
-  management: 'Gestão Financeira',
-  'admin-users': 'Gerenciar Usuários',
-  'admin-system': 'Sistema'
+  pt: {
+    dashboard: 'Dashboard',
+    income: 'Receitas',
+    expenses: 'Despesas',
+    cashflow: 'Fluxo de Caixa',
+    categories: 'Categorias',
+    payables: 'Contas a Pagar',
+    investments: 'Investimentos',
+    management: 'Gestão Financeira',
+    'admin-users': 'Gerenciar Usuários',
+    'admin-system': 'Sistema'
+  },
+  en: {
+    dashboard: 'Dashboard',
+    income: 'Income',
+    expenses: 'Expenses',
+    cashflow: 'Cash Flow',
+    categories: 'Categories',
+    payables: 'Payables',
+    investments: 'Investments',
+    management: 'Financial Management',
+    'admin-users': 'Manage Users',
+    'admin-system': 'System'
+  }
 };
 
 function App() {
@@ -47,10 +61,6 @@ function App() {
   const { isLoaded } = useAuth();
   const { user } = useUser();
   
-  const PageComponent = pageComponents[activeTab as keyof typeof pageComponents];
-  const pageTitle = pageTitles[activeTab as keyof typeof pageTitles];
-  const isAdminPage = activeTab.startsWith('admin-');
-
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -71,23 +81,48 @@ function App() {
           </SignedOut>
 
           <SignedIn>
-            <ProtectedRoute requireAdmin={isAdminPage}>
-              <div className="flex h-screen bg-background">
-                <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-                
-                <div className="flex-1 flex flex-col md:ml-64">
-                  <Header title={pageTitle} />
-                  
-                  <main className="flex-1 overflow-y-auto p-6">
-                    <PageComponent />
-                  </main>
-                </div>
-              </div>
-            </ProtectedRoute>
+            <AppContent 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab}
+              user={user}
+            />
           </SignedIn>
         </>
       </AppProvider>
     </ThemeProvider>
+  );
+}
+
+function AppContent({ activeTab, setActiveTab, user }: { 
+  activeTab: string; 
+  setActiveTab: (tab: string) => void;
+  user: any;
+}) {
+  const PageComponent = pageComponents[activeTab as keyof typeof pageComponents];
+  const isAdminPage = activeTab.startsWith('admin-');
+
+  return (
+    <AppProvider>
+      {({ language }) => {
+        const pageTitle = pageTitles[language][activeTab as keyof typeof pageTitles.pt] || activeTab;
+        
+        return (
+          <ProtectedRoute requireAdmin={isAdminPage}>
+            <div className="flex h-screen bg-background">
+              <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+              
+              <div className="flex-1 flex flex-col md:ml-64">
+                <Header title={pageTitle} />
+                
+                <main className="flex-1 overflow-y-auto p-6">
+                  <PageComponent />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        );
+      }}
+    </AppProvider>
   );
 }
 
