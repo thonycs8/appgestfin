@@ -102,7 +102,7 @@ export function Income() {
   );
 
   return (
-    <div className="space-y-8 w-full">
+    <div className="space-y-8">
       {/* Resumo de Entradas */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card>

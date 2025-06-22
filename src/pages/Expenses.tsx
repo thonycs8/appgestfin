@@ -102,7 +102,7 @@ export function Expenses() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Resumo de Despesas */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
