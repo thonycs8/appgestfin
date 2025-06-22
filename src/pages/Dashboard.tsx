@@ -52,7 +52,7 @@ export function Dashboard() {
   const pendingPayables = payables.filter(p => p.status === 'pending');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 w-full">
       {/* Métricas principais */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
@@ -86,7 +86,7 @@ export function Dashboard() {
       </div>
 
       {/* Gráficos de categoria */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <CategoryChart title={t('expensesByCategory')} data={expensesByCategory} />
         <CategoryChart title={t('incomeByCategory')} data={incomesByCategory} />
       </div>
@@ -95,7 +95,7 @@ export function Dashboard() {
       <CashFlowChart />
 
       {/* Contas a pagar */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-red-700 dark:text-red-400">
