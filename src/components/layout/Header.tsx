@@ -90,7 +90,7 @@ export function Header({ title }: HeaderProps) {
                 </p>
                 {user?.publicMetadata?.role === 'admin' && (
                   <p className="text-xs leading-none text-primary font-medium">
-                    Administrador
+                    {language === 'pt' ? 'Administrador' : 'Administrator'}
                   </p>
                 )}
               </div>
@@ -98,13 +98,13 @@ export function Header({ title }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
-              <span>Configurações</span>
+              <span>{language === 'pt' ? 'Configurações' : 'Settings'}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <SignOutButton>
               <DropdownMenuItem>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
+                <span>{language === 'pt' ? 'Sair' : 'Sign Out'}</span>
               </DropdownMenuItem>
             </SignOutButton>
           </DropdownMenuContent>

@@ -1,8 +1,44 @@
 import { ArrowRight, TrendingUp, Shield, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SignInButton } from '@clerk/clerk-react';
+import { useApp } from '@/contexts/AppContext';
 
 export function Hero() {
+  const { language } = useApp();
+
+  const content = {
+    pt: {
+      badge: 'Gestão Financeira Inteligente',
+      title: 'Controle suas',
+      titleHighlight: ' finanças ',
+      titleEnd: 'com inteligência',
+      description: 'O Gestfin é a solução completa para gerenciar as finanças da sua empresa e família. Controle receitas, despesas, metas e investimentos em uma única plataforma.',
+      ctaPrimary: 'Começar Gratuitamente',
+      ctaSecondary: 'Ver Demonstração',
+      stats: {
+        uptime: 'Uptime',
+        users: 'Usuários Ativos',
+        managed: 'Gerenciados'
+      }
+    },
+    en: {
+      badge: 'Smart Financial Management',
+      title: 'Control your',
+      titleHighlight: ' finances ',
+      titleEnd: 'intelligently',
+      description: 'Gestfin is the complete solution to manage your company and family finances. Control income, expenses, goals and investments in a single platform.',
+      ctaPrimary: 'Start Free',
+      ctaSecondary: 'View Demo',
+      stats: {
+        uptime: 'Uptime',
+        users: 'Active Users',
+        managed: 'Managed'
+      }
+    }
+  };
+
+  const t = content[language];
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Background Pattern */}
@@ -15,33 +51,32 @@ export function Hero() {
             <div className="space-y-4">
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium">
                 <TrendingUp className="w-4 h-4 mr-2" />
-                Gestão Financeira Inteligente
+                {t.badge}
               </div>
               
               <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                Controle suas
+                {t.title}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                  {' '}finanças{' '}
+                  {t.titleHighlight}
                 </span>
-                com inteligência
+                {t.titleEnd}
               </h1>
               
               <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl">
-                O Gestfin é a solução completa para gerenciar as finanças da sua empresa e família. 
-                Controle receitas, despesas, metas e investimentos em uma única plataforma.
+                {t.description}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <SignInButton mode="modal">
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg">
-                  Começar Gratuitamente
+                  {t.ctaPrimary}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </SignInButton>
               
               <Button size="lg" variant="outline" className="px-8 py-4 text-lg">
-                Ver Demonstração
+                {t.ctaSecondary}
               </Button>
             </div>
 
@@ -49,15 +84,15 @@ export function Hero() {
             <div className="grid grid-cols-3 gap-8 pt-8 border-t border-border">
               <div className="text-center">
                 <div className="text-2xl font-bold text-foreground">99.9%</div>
-                <div className="text-sm text-muted-foreground">Uptime</div>
+                <div className="text-sm text-muted-foreground">{t.stats.uptime}</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-foreground">10k+</div>
-                <div className="text-sm text-muted-foreground">Usuários Ativos</div>
+                <div className="text-sm text-muted-foreground">{t.stats.users}</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-foreground">€ 50M+</div>
-                <div className="text-sm text-muted-foreground">Gerenciados</div>
+                <div className="text-sm text-muted-foreground">{t.stats.managed}</div>
               </div>
             </div>
           </div>
@@ -74,12 +109,16 @@ export function Hero() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground">Dashboard</h3>
-                      <p className="text-sm text-muted-foreground">Visão geral financeira</p>
+                      <p className="text-sm text-muted-foreground">
+                        {language === 'pt' ? 'Visão geral financeira' : 'Financial overview'}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">+18.5%</div>
-                    <div className="text-sm text-muted-foreground">vs mês anterior</div>
+                    <div className="text-sm text-muted-foreground">
+                      {language === 'pt' ? 'vs mês anterior' : 'vs last month'}
+                    </div>
                   </div>
                 </div>
 
@@ -96,11 +135,15 @@ export function Hero() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                     <div className="text-lg font-bold text-green-700 dark:text-green-400">€ 45.2k</div>
-                    <div className="text-sm text-green-600 dark:text-green-500">Receitas</div>
+                    <div className="text-sm text-green-600 dark:text-green-500">
+                      {language === 'pt' ? 'Receitas' : 'Revenue'}
+                    </div>
                   </div>
                   <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
                     <div className="text-lg font-bold text-red-700 dark:text-red-400">€ 28.1k</div>
-                    <div className="text-sm text-red-600 dark:text-red-500">Despesas</div>
+                    <div className="text-sm text-red-600 dark:text-red-500">
+                      {language === 'pt' ? 'Despesas' : 'Expenses'}
+                    </div>
                   </div>
                 </div>
               </div>
