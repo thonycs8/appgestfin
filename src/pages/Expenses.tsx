@@ -1,4 +1,4 @@
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          import { useState } from 'react';
+import { useState } from 'react';
 import { Plus, TrendingDown, Building2, Home, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,19 +36,7 @@ export function Expenses() {
 
   const activeExpenseCategories = categories.filter(c => c.type === 'expense' && c.isActive);
 
-  const handleCreateExpense = () => {
-    if (!newExpense.category || !newExpense.subcategory || !newExpense.amount || !newExpense.description) return;
-
-    addTransaction({
-      type: 'expense',
-      category: newExpense.category as 'empresa' | 'familia',
-      subcategory: newExpense.subcategory,
-      amount: parseFloat(newExpense.amount),
-      description: newExpense.description,
-      date: newExpense.date,
-      status: 'completed'
-    });
-
+  const resetForm = () => {
     setNewExpense({
       category: '',
       subcategory: '',
@@ -56,7 +44,42 @@ export function Expenses() {
       description: '',
       date: new Date().toISOString().split('T')[0]
     });
-    setIsDialogOpen(false);
+  };
+
+  const handleCreateExpense = () => {
+    // Validação básica
+    if (!newExpense.category || !newExpense.subcategory || !newExpense.amount || !newExpense.description) {
+      alert(language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios.' : 'Please fill in all required fields.');
+      return;
+    }
+
+    const amount = parseFloat(newExpense.amount);
+    if (isNaN(amount) || amount <= 0) {
+      alert(language === 'pt' ? 'Por favor, digite um valor válido.' : 'Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      addTransaction({
+        type: 'expense',
+        category: newExpense.category as 'empresa' | 'familia',
+        subcategory: newExpense.subcategory,
+        amount: amount,
+        description: newExpense.description.trim(),
+        date: newExpense.date,
+        status: 'completed'
+      });
+
+      // Reset form and close dialog
+      resetForm();
+      setIsDialogOpen(false);
+      
+      // Show success message
+      alert(language === 'pt' ? 'Despesa registrada com sucesso!' : 'Expense registered successfully!');
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      alert(language === 'pt' ? 'Erro ao registrar despesa. Tente novamente.' : 'Error registering expense. Please try again.');
+    }
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -72,29 +95,55 @@ export function Expenses() {
   };
 
   const handleUpdateTransaction = () => {
-    if (!editingTransaction || !newExpense.category || !newExpense.subcategory || !newExpense.amount || !newExpense.description) return;
+    if (!editingTransaction || !newExpense.category || !newExpense.subcategory || !newExpense.amount || !newExpense.description) {
+      alert(language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios.' : 'Please fill in all required fields.');
+      return;
+    }
 
-    updateTransaction(editingTransaction.id, {
-      category: newExpense.category as 'empresa' | 'familia',
-      subcategory: newExpense.subcategory,
-      amount: parseFloat(newExpense.amount),
-      description: newExpense.description,
-      date: newExpense.date
-    });
+    const amount = parseFloat(newExpense.amount);
+    if (isNaN(amount) || amount <= 0) {
+      alert(language === 'pt' ? 'Por favor, digite um valor válido.' : 'Please enter a valid amount.');
+      return;
+    }
 
-    setEditingTransaction(null);
-    setNewExpense({
-      category: '',
-      subcategory: '',
-      amount: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0]
-    });
-    setIsDialogOpen(false);
+    try {
+      updateTransaction(editingTransaction.id, {
+        category: newExpense.category as 'empresa' | 'familia',
+        subcategory: newExpense.subcategory,
+        amount: amount,
+        description: newExpense.description.trim(),
+        date: newExpense.date
+      });
+
+      setEditingTransaction(null);
+      resetForm();
+      setIsDialogOpen(false);
+      
+      alert(language === 'pt' ? 'Despesa atualizada com sucesso!' : 'Expense updated successfully!');
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      alert(language === 'pt' ? 'Erro ao atualizar despesa. Tente novamente.' : 'Error updating expense. Please try again.');
+    }
   };
 
   const handleDeleteTransaction = (id: string) => {
-    deleteTransaction(id);
+    if (confirm(language === 'pt' ? 'Tem certeza que deseja excluir esta despesa?' : 'Are you sure you want to delete this expense?')) {
+      try {
+        deleteTransaction(id);
+        alert(language === 'pt' ? 'Despesa excluída com sucesso!' : 'Expense deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting expense:', error);
+        alert(language === 'pt' ? 'Erro ao excluir despesa.' : 'Error deleting expense.');
+      }
+    }
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingTransaction(null);
+      resetForm();
+    }
   };
 
   const filteredCategories = activeExpenseCategories.filter(c => 
@@ -152,18 +201,9 @@ export function Expenses() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('recentExpenses')}</CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
-              <Button variant="destructive" onClick={() => {
-                setEditingTransaction(null);
-                setNewExpense({
-                  category: '',
-                  subcategory: '',
-                  amount: '',
-                  description: '',
-                  date: new Date().toISOString().split('T')[0]
-                });
-              }}>
+              <Button variant="destructive">
                 <Plus className="mr-2 h-4 w-4" />
                 {t('newExpense')}
               </Button>
@@ -177,9 +217,10 @@ export function Expenses() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="category">{t('categoryGroup')}</Label>
-                  <Select value={newExpense.category} onValueChange={(value) => 
-                    setNewExpense(prev => ({...prev, category: value, subcategory: ''}))
-                  }>
+                  <Select 
+                    value={newExpense.category} 
+                    onValueChange={(value) => setNewExpense(prev => ({...prev, category: value, subcategory: ''}))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={language === 'pt' ? 'Selecione o grupo' : 'Select group'} />
                     </SelectTrigger>
@@ -189,11 +230,14 @@ export function Expenses() {
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div>
                   <Label htmlFor="subcategory">{t('category')}</Label>
-                  <Select value={newExpense.subcategory} onValueChange={(value) => 
-                    setNewExpense(prev => ({...prev, subcategory: value}))
-                  }>
+                  <Select 
+                    value={newExpense.subcategory} 
+                    onValueChange={(value) => setNewExpense(prev => ({...prev, subcategory: value}))}
+                    disabled={!newExpense.category}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={language === 'pt' ? 'Selecione a categoria' : 'Select category'} />
                     </SelectTrigger>
@@ -206,16 +250,19 @@ export function Expenses() {
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div>
                   <Label htmlFor="amount">{t('amount')}</Label>
                   <Input 
                     type="number" 
                     step="0.01"
+                    min="0"
                     placeholder="0,00"
                     value={newExpense.amount}
                     onChange={(e) => setNewExpense(prev => ({...prev, amount: e.target.value}))}
                   />
                 </div>
+                
                 <div>
                   <Label htmlFor="description">{t('description')}</Label>
                   <Input 
@@ -224,6 +271,7 @@ export function Expenses() {
                     onChange={(e) => setNewExpense(prev => ({...prev, description: e.target.value}))}
                   />
                 </div>
+                
                 <div>
                   <Label htmlFor="date">{t('date')}</Label>
                   <Input 
@@ -232,10 +280,12 @@ export function Expenses() {
                     onChange={(e) => setNewExpense(prev => ({...prev, date: e.target.value}))}
                   />
                 </div>
+                
                 <Button 
                   className="w-full" 
                   variant="destructive"
                   onClick={editingTransaction ? handleUpdateTransaction : handleCreateExpense}
+                  type="button"
                 >
                   {editingTransaction ? t('update') : t('registerExpense')}
                 </Button>
@@ -245,69 +295,77 @@ export function Expenses() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {expenseTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                <div className="flex items-center space-x-4">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                    transaction.category === 'empresa' ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-purple-100 dark:bg-purple-900/20'
-                  }`}>
-                    {transaction.category === 'empresa' ? 
-                      <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" /> : 
-                      <Home className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    }
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{transaction.description}</p>
-                    <p className="text-sm text-muted-foreground">{transaction.subcategory}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(transaction.date, language === 'pt' ? 'pt-PT' : 'en-GB')}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-red-600 dark:text-red-400">
-                      -{formatCurrency(transaction.amount)}
-                    </p>
-                    <Badge variant="outline" className={`${
-                      transaction.category === 'empresa' ? 'border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400' : 'border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400'
-                    }`}>
-                      {transaction.category === 'empresa' ? t('company') : t('family')}
-                    </Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditTransaction(transaction)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{language === 'pt' ? 'Excluir Transação' : 'Delete Transaction'}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {language === 'pt' ? 'Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.' : 'Are you sure you want to delete this transaction? This action cannot be undone.'}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteTransaction(transaction.id)}>
-                            {t('delete')}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
+            {expenseTransactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <TrendingDown className="h-12 w-12 mx-auto mb-4 text-red-500" />
+                <p>{language === 'pt' ? 'Nenhuma despesa registrada ainda.' : 'No expenses registered yet.'}</p>
+                <p className="text-sm">{language === 'pt' ? 'Clique no botão "Nova Despesa" para começar.' : 'Click "New Expense" button to get started.'}</p>
               </div>
-            ))}
+            ) : (
+              expenseTransactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="flex items-center space-x-4">
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      transaction.category === 'empresa' ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-purple-100 dark:bg-purple-900/20'
+                    }`}>
+                      {transaction.category === 'empresa' ? 
+                        <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" /> : 
+                        <Home className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      }
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{transaction.description}</p>
+                      <p className="text-sm text-muted-foreground">{transaction.subcategory}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(transaction.date, language === 'pt' ? 'pt-PT' : 'en-GB')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-red-600 dark:text-red-400">
+                        -{formatCurrency(transaction.amount)}
+                      </p>
+                      <Badge variant="outline" className={`${
+                        transaction.category === 'empresa' ? 'border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400' : 'border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400'
+                      }`}>
+                        {transaction.category === 'empresa' ? t('company') : t('family')}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditTransaction(transaction)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{language === 'pt' ? 'Excluir Transação' : 'Delete Transaction'}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {language === 'pt' ? 'Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.' : 'Are you sure you want to delete this transaction? This action cannot be undone.'}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteTransaction(transaction.id)}>
+                              {t('delete')}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
