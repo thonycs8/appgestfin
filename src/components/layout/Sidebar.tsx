@@ -12,7 +12,8 @@ import {
   X,
   Building2,
   Users,
-  Shield
+  Shield,
+  Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -30,7 +31,8 @@ const menuItems = [
   { id: 'categories', label: 'Categorias', icon: Tags },
   { id: 'payables', label: 'Contas a Pagar', icon: CreditCard },
   { id: 'investments', label: 'Investimentos', icon: PiggyBank },
-  { id: 'management', label: 'Gestão Financeira', icon: Settings }
+  { id: 'management', label: 'Gestão Financeira', icon: Settings },
+  { id: 'subscription', label: 'Assinatura', icon: Crown }
 ];
 
 const adminMenuItems = [
@@ -46,6 +48,20 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const isAdmin = user?.publicMetadata?.role === 'admin';
 
   if (!isSignedIn) return null;
+
+  const handleNavigation = (tabId: string) => {
+    setActiveTab(tabId);
+    setIsOpen(false);
+    
+    // Handle special routes
+    if (tabId === 'subscription-success') {
+      window.history.pushState({}, '', '/subscription/success');
+    } else if (tabId === 'subscription-cancel') {
+      window.history.pushState({}, '', '/subscription/cancel');
+    } else {
+      window.history.pushState({}, '', '/');
+    }
+  };
 
   return (
     <>
@@ -84,10 +100,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setIsOpen(false);
-                  }}
+                  onClick={() => handleNavigation(item.id)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-all duration-200",
                     activeTab === item.id
@@ -111,10 +124,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => {
-                          setActiveTab(item.id);
-                          setIsOpen(false);
-                        }}
+                        onClick={() => handleNavigation(item.id)}
                         className={cn(
                           "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-all duration-200",
                           activeTab === item.id

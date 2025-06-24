@@ -12,6 +12,9 @@ import { Categories } from '@/pages/Categories';
 import { Management } from '@/pages/Management';
 import { AdminUsers } from '@/pages/AdminUsers';
 import { AdminSystem } from '@/pages/AdminSystem';
+import { Subscription } from '@/pages/Subscription';
+import { SubscriptionSuccess } from '@/pages/SubscriptionSuccess';
+import { SubscriptionCancel } from '@/pages/SubscriptionCancel';
 import { AppProvider } from '@/contexts/AppContext';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import './App.css';
@@ -25,6 +28,9 @@ const pageComponents = {
   payables: Payables,
   investments: Dashboard, // Placeholder
   management: Management,
+  subscription: Subscription,
+  'subscription-success': SubscriptionSuccess,
+  'subscription-cancel': SubscriptionCancel,
   'admin-users': AdminUsers,
   'admin-system': AdminSystem
 };
@@ -39,6 +45,9 @@ const pageTitles = {
     payables: 'Contas a Pagar',
     investments: 'Investimentos',
     management: 'Gestão Financeira',
+    subscription: 'Assinatura',
+    'subscription-success': 'Assinatura Confirmada',
+    'subscription-cancel': 'Assinatura Cancelada',
     'admin-users': 'Gerenciar Usuários',
     'admin-system': 'Sistema'
   },
@@ -51,6 +60,9 @@ const pageTitles = {
     payables: 'Payables',
     investments: 'Investments',
     management: 'Financial Management',
+    subscription: 'Subscription',
+    'subscription-success': 'Subscription Confirmed',
+    'subscription-cancel': 'Subscription Cancelled',
     'admin-users': 'Manage Users',
     'admin-system': 'System'
   }
@@ -100,11 +112,27 @@ function AppContent({ activeTab, setActiveTab, user }: {
 }) {
   const PageComponent = pageComponents[activeTab as keyof typeof pageComponents];
   const isAdminPage = activeTab.startsWith('admin-');
+  const isFullPageRoute = ['subscription-success', 'subscription-cancel'].includes(activeTab);
+
+  // Handle URL-based routing for success/cancel pages
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname;
+    if (path === '/subscription/success' && activeTab !== 'subscription-success') {
+      setActiveTab('subscription-success');
+    } else if (path === '/subscription/cancel' && activeTab !== 'subscription-cancel') {
+      setActiveTab('subscription-cancel');
+    }
+  }
 
   return (
     <AppProvider>
       {({ language }) => {
         const pageTitle = pageTitles[language][activeTab as keyof typeof pageTitles.pt] || activeTab;
+        
+        // Full page routes (success/cancel) don't need sidebar/header
+        if (isFullPageRoute) {
+          return <PageComponent />;
+        }
         
         return (
           <ProtectedRoute requireAdmin={isAdminPage}>
