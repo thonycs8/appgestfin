@@ -88,7 +88,7 @@ export function Header({ title }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="h-9 w-9">
-              <Languages className="h-4 w-4" />
+              <Languages className="h-4 w-4 text-foreground" />
               <span className="sr-only">Toggle language</span>
             </Button>
           </DropdownMenuTrigger>
@@ -113,7 +113,7 @@ export function Header({ title }: HeaderProps) {
 
         {/* Notifications */}
         <Button variant="outline" size="icon" className="relative h-9 w-9">
-          <Bell className="h-4 w-4" />
+          <Bell className="h-4 w-4 text-foreground" />
           <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
             3
           </span>

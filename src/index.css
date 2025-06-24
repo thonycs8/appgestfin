@@ -164,3 +164,41 @@ html {
   outline: 2px solid theme('colors.blue.500');
   outline-offset: 2px;
 }
+
+/* Fix for sidebar positioning */
+.sidebar-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 30;
+}
+
+/* Ensure proper spacing for main content */
+.main-content {
+  margin-left: 0;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    margin-left: 16rem; /* 64 * 0.25rem = 16rem */
+  }
+}
+
+/* Dark mode improvements */
+.dark .text-foreground {
+  color: hsl(var(--foreground));
+}
+
+.dark .bg-background {
+  background-color: hsl(var(--background));
+}
+
+/* Button icon visibility in dark mode */
+.dark button svg {
+  color: hsl(var(--foreground));
+}
+
+.dark [data-state="open"] svg {
+  color: hsl(var(--foreground));
+}

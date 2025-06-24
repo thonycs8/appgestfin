@@ -139,11 +139,11 @@ function AppContent({ activeTab, setActiveTab, user }: {
             <div className="flex h-screen bg-background">
               <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
               
-              <div className="flex-1 flex flex-col md:ml-64">
+              <div className="flex-1 flex flex-col ml-0 md:ml-64">
                 <Header title={pageTitle} />
                 
-                <main className="flex-1 overflow-y-auto bg-muted/20">
-                  <div className="container mx-auto p-6 max-w-none">
+                <main className="flex-1 overflow-y-auto bg-muted/20 p-6">
+                  <div className="max-w-none">
                     <PageComponent />
                   </div>
                 </main>

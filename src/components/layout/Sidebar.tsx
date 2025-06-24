@@ -77,7 +77,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed left-0 top-0 z-40 h-screen w-64 transform bg-gradient-to-b from-blue-900 to-blue-800 text-white transition-transform duration-300 ease-in-out",
+        "sidebar-fixed w-64 transform bg-gradient-to-b from-blue-900 to-blue-800 text-white transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full",
         "md:translate-x-0"
       )}>
