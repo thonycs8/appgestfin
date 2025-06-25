@@ -8,7 +8,6 @@ import { createClient } from '@supabase/supabase-js';
 import { useApp } from '@/contexts/AppContext';
 import { Check, Crown, Loader2, TrendingUp, Users, Shield, Zap, BarChart3, Target } from 'lucide-react';
 import { stripeProducts } from '@/stripe-config';
-import { trackSubscriptionEvent, withPerformanceMonitoring, addBreadcrumb } from '@/lib/sentry';
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -33,34 +32,30 @@ export function Subscription() {
   useEffect(() => {
     const fetchSubscription = async () => {
       try {
-        await withPerformanceMonitoring('fetch_subscription', async () => {
-          const token = await getToken({ template: 'supabase' });
-          
-          if (!token) {
-            throw new Error('No authentication token available');
-          }
+        const token = await getToken({ template: 'supabase' });
+        
+        if (!token) {
+          throw new Error('No authentication token available');
+        }
 
-          supabase.auth.setSession({
-            access_token: token,
-            refresh_token: '',
-          });
-
-          const { data, error: fetchError } = await supabase
-            .from('stripe_user_subscriptions')
-            .select('*')
-            .maybeSingle();
-
-          if (fetchError) {
-            throw fetchError;
-          }
-
-          setSubscription(data);
-          addBreadcrumb('Subscription data fetched', 'subscription');
+        supabase.auth.setSession({
+          access_token: token,
+          refresh_token: '',
         });
+
+        const { data, error: fetchError } = await supabase
+          .from('stripe_user_subscriptions')
+          .select('*')
+          .maybeSingle();
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        setSubscription(data);
       } catch (err) {
         console.error('Error fetching subscription:', err);
         setError(err instanceof Error ? err.message : 'Failed to load subscription');
-        trackSubscriptionEvent('fetch_error');
       } finally {
         setLoading(false);
       }
@@ -90,51 +85,40 @@ export function Subscription() {
     try {
       setCheckoutLoading(priceId);
       
-      await withPerformanceMonitoring('create_checkout_session', async () => {
-        const token = await getToken();
-        
-        if (!token) {
-          throw new Error('Authentication required');
-        }
+      const token = await getToken();
+      
+      if (!token) {
+        throw new Error('Authentication required');
+      }
 
-        trackSubscriptionEvent('checkout_initiated', priceId);
-        addBreadcrumb('Checkout session creation started', 'subscription');
-
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            price_id: priceId,
-            mode: 'subscription',
-            success_url: `${window.location.origin}/subscription/success`,
-            cancel_url: `${window.location.origin}/subscription/cancel`,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create checkout session');
-        }
-
-        const { url } = await response.json();
-        
-        if (url) {
-          trackSubscriptionEvent('checkout_redirect', priceId);
-          addBreadcrumb('Redirecting to Stripe checkout', 'subscription');
-          window.location.href = url;
-        } else {
-          throw new Error('No checkout URL received');
-        }
-      }, {
-        priceId,
-        operation: 'stripe_checkout',
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          price_id: priceId,
+          mode: 'subscription',
+          success_url: `${window.location.origin}/subscription/success`,
+          cancel_url: `${window.location.origin}/subscription/cancel`,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+      
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
     } catch (error) {
       console.error('Subscription error:', error);
-      trackSubscriptionEvent('checkout_error', priceId);
       alert(language === 'pt' 
         ? 'Erro ao processar assinatura. Tente novamente.' 
         : 'Error processing subscription. Please try again.'

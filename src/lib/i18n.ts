@@ -50,16 +50,11 @@ export const translations = {
     // Groups
     company: 'Empresa',
     family: 'Família',
-    
-    // Types
-    income: 'Receita',
-    expense: 'Despesa',
 
     // Dashboard
     totalRevenue: 'Receita Total',
     totalExpenses: 'Despesas Totais',
     netProfit: 'Lucro Líquido',
-    investments: 'Investimentos',
     overdueAccounts: 'Contas Vencidas',
     upcomingDue: 'Próximos Vencimentos',
     expensesByCategory: 'Despesas por Categoria',
@@ -209,16 +204,11 @@ export const translations = {
     // Groups
     company: 'Company',
     family: 'Family',
-    
-    // Types
-    income: 'Income',
-    expense: 'Expense',
 
     // Dashboard
     totalRevenue: 'Total Revenue',
     totalExpenses: 'Total Expenses',
     netProfit: 'Net Profit',
-    investments: 'Investments',
     overdueAccounts: 'Overdue Accounts',
     upcomingDue: 'Upcoming Due',
     expensesByCategory: 'Expenses by Category',
