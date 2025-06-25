@@ -95,3 +95,30 @@ export interface Budget {
   endDate: string;
   userId?: string;
 }
+
+export interface Alert {
+  id: string;
+  type: 'payable_due' | 'payable_overdue' | 'investment_yield' | 'budget_limit' | 'goal_deadline' | 'low_balance';
+  title: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  isRead: boolean;
+  createdAt: string;
+  dueDate?: string;
+  relatedId?: string;
+  relatedType?: 'payable' | 'investment' | 'budget' | 'goal' | 'account';
+  userId?: string;
+}
+
+export interface NotificationSettings {
+  id: string;
+  userId: string;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  payableDueDays: number; // Dias antes do vencimento para alertar
+  investmentYieldThreshold: number; // Percentual de rendimento para alertar
+  budgetLimitThreshold: number; // Percentual do orçamento para alertar
+  lowBalanceThreshold: number; // Valor mínimo de saldo para alertar
+  createdAt: string;
+  updatedAt: string;
+}
