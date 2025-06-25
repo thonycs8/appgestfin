@@ -22,10 +22,39 @@ export class RateLimitError extends Error {
   }
 }
 
+// Helper function to ensure user exists in database
+async function ensureUserExists(userId: string, userEmail?: string) {
+  try {
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (!existingUser && userEmail) {
+      // Create user record if it doesn't exist
+      const { error: createError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          email: userEmail,
+          created_at: new Date().toISOString()
+        });
+
+      if (createError && createError.code !== '23505') { // Ignore duplicate key errors
+        console.error('Error creating user:', createError);
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring user exists:', error);
+  }
+}
+
 // Transactions
 export async function createTransaction(
   transaction: Omit<Transaction, 'id'>,
-  userId: string
+  userId: string,
+  userEmail?: string
 ): Promise<Transaction> {
   if (!checkRateLimit(`transactions:${userId}`, RATE_LIMITS.TRANSACTIONS_PER_MINUTE)) {
     throw new RateLimitError('Too many transaction requests. Please try again later.');
@@ -39,6 +68,9 @@ export async function createTransaction(
   if (!validateDate(transaction.date)) {
     throw new ValidationError('Invalid date');
   }
+
+  // Ensure user exists
+  await ensureUserExists(userId, userEmail);
 
   const sanitizedTransaction = {
     ...transaction,
@@ -148,11 +180,15 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
 // Categories
 export async function createCategory(
   category: Omit<Category, 'id' | 'createdAt'>,
-  userId: string
+  userId: string,
+  userEmail?: string
 ): Promise<Category> {
   if (!checkRateLimit(`categories:${userId}`, RATE_LIMITS.CATEGORIES_PER_MINUTE)) {
     throw new RateLimitError('Too many category requests. Please try again later.');
   }
+
+  // Ensure user exists
+  await ensureUserExists(userId, userEmail);
 
   const sanitizedCategory = {
     ...category,
@@ -202,7 +238,8 @@ export async function getCategories(userId: string): Promise<Category[]> {
 // Payables
 export async function createPayable(
   payable: Omit<Payable, 'id'>,
-  userId: string
+  userId: string,
+  userEmail?: string
 ): Promise<Payable> {
   if (!checkRateLimit(`payables:${userId}`, RATE_LIMITS.PAYABLES_PER_MINUTE)) {
     throw new RateLimitError('Too many payable requests. Please try again later.');
@@ -215,6 +252,9 @@ export async function createPayable(
   if (!validateDate(payable.dueDate)) {
     throw new ValidationError('Invalid due date');
   }
+
+  // Ensure user exists
+  await ensureUserExists(userId, userEmail);
 
   const sanitizedPayable = {
     ...payable,

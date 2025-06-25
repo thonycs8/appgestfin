@@ -168,7 +168,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     if (!user) throw new Error('User not authenticated');
     
     try {
-      const newTransaction = await dbCreateTransaction(transaction, user.id);
+      const newTransaction = await dbCreateTransaction(transaction, user.id, user.emailAddresses[0]?.emailAddress);
       setTransactions(prev => [newTransaction, ...prev]);
       toast.success('Transação criada com sucesso!');
     } catch (error) {
@@ -208,7 +208,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     if (!user) throw new Error('User not authenticated');
     
     try {
-      const newCategory = await dbCreateCategory(category, user.id);
+      const newCategory = await dbCreateCategory(category, user.id, user.emailAddresses[0]?.emailAddress);
       setCategories(prev => [newCategory, ...prev]);
       toast.success('Categoria criada com sucesso!');
     } catch (error) {
@@ -234,7 +234,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     if (!user) throw new Error('User not authenticated');
     
     try {
-      const newPayable = await dbCreatePayable(payable, user.id);
+      const newPayable = await dbCreatePayable(payable, user.id, user.emailAddresses[0]?.emailAddress);
       setPayables(prev => [newPayable, ...prev]);
       toast.success('Conta a pagar criada com sucesso!');
     } catch (error) {
