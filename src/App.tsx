@@ -140,8 +140,8 @@ function AppContent({ activeTab, setActiveTab, user }: {
                 <div className="md:ml-64">
                   <Header title={pageTitle} />
                   
-                  <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-                    <div className="max-w-none">
+                  <main className="flex-1 overflow-y-auto bg-gray-50">
+                    <div className="w-full p-6">
                       <PageComponent />
                     </div>
                   </main>
