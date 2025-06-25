@@ -12,11 +12,15 @@ import {
   updateTransaction as dbUpdateTransaction,
   updatePayable as dbUpdatePayable,
   deleteTransaction as dbDeleteTransaction,
-  deletePayable as dbDeletePayable,
+  deletePayable as dbDeletePayable
+} from '@/lib/database';
+import { 
   DatabaseError,
   ValidationError,
-  RateLimitError
-} from '@/lib/database';
+  RateLimitError,
+  withErrorHandling, 
+  FinancialError 
+} from '@/lib/errorHandling';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { 
@@ -27,7 +31,6 @@ import {
   captureError,
   addBreadcrumb
 } from '@/lib/sentry';
-import { withErrorHandling, FinancialError } from '@/lib/errorHandling';
 
 interface AppContextType {
   // Language & Theme
