@@ -15,6 +15,7 @@ import { AdminSystem } from '@/pages/AdminSystem';
 import { Subscription } from '@/pages/Subscription';
 import { SubscriptionSuccess } from '@/pages/SubscriptionSuccess';
 import { SubscriptionCancel } from '@/pages/SubscriptionCancel';
+import { Alerts } from '@/pages/Alerts';
 import { AppProvider } from '@/contexts/AppContext';
 import './App.css';
 
@@ -26,6 +27,7 @@ const pageComponents = {
   categories: Categories,
   payables: Payables,
   investments: Dashboard, // Placeholder
+  alerts: Alerts,
   management: Management,
   subscription: Subscription,
   'subscription-success': SubscriptionSuccess,
@@ -43,6 +45,7 @@ const pageTitles = {
     categories: 'Categorias',
     payables: 'Contas a Pagar',
     investments: 'Investimentos',
+    alerts: 'Central de Alertas',
     management: 'Gestão Financeira',
     subscription: 'Assinatura',
     'subscription-success': 'Assinatura Confirmada',
@@ -58,6 +61,7 @@ const pageTitles = {
     categories: 'Categories',
     payables: 'Payables',
     investments: 'Investments',
+    alerts: 'Alerts Center',
     management: 'Financial Management',
     subscription: 'Subscription',
     'subscription-success': 'Subscription Confirmed',

@@ -13,7 +13,8 @@ import {
   Building2,
   Users,
   Shield,
-  Crown
+  Crown,
+  Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -31,6 +32,7 @@ const menuItems = [
   { id: 'categories', label: 'Categorias', icon: Tags },
   { id: 'payables', label: 'Contas a Pagar', icon: CreditCard },
   { id: 'investments', label: 'Investimentos', icon: PiggyBank },
+  { id: 'alerts', label: 'Alertas', icon: Bell },
   { id: 'management', label: 'Gestão Financeira', icon: Settings },
   { id: 'subscription', label: 'Assinatura', icon: Crown }
 ];
