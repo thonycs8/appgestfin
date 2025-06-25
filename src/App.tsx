@@ -16,7 +16,6 @@ import { Subscription } from '@/pages/Subscription';
 import { SubscriptionSuccess } from '@/pages/SubscriptionSuccess';
 import { SubscriptionCancel } from '@/pages/SubscriptionCancel';
 import { AppProvider } from '@/contexts/AppContext';
-import { ThemeProvider } from '@/components/ui/theme-provider';
 import './App.css';
 
 const pageComponents = {
@@ -75,33 +74,31 @@ function App() {
   
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="gestfin-ui-theme">
-      <AppProvider>
-        <>
-          <SignedOut>
-            <LandingPage />
-          </SignedOut>
+    <AppProvider>
+      <>
+        <SignedOut>
+          <LandingPage />
+        </SignedOut>
 
-          <SignedIn>
-            <AppContent 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab}
-              user={user}
-            />
-          </SignedIn>
-        </>
-      </AppProvider>
-    </ThemeProvider>
+        <SignedIn>
+          <AppContent 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab}
+            user={user}
+          />
+        </SignedIn>
+      </>
+    </AppProvider>
   );
 }
 
@@ -136,14 +133,14 @@ function AppContent({ activeTab, setActiveTab, user }: {
         
         return (
           <ProtectedRoute requireAdmin={isAdminPage}>
-            <div className="flex h-screen bg-background">
+            <div className="flex h-screen bg-gray-50">
               <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
               
               <div className="flex-1 flex flex-col">
                 <div className="md:ml-64">
                   <Header title={pageTitle} />
                   
-                  <main className="flex-1 overflow-y-auto bg-muted/20 p-6">
+                  <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
                     <div className="max-w-none">
                       <PageComponent />
                     </div>

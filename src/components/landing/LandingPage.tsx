@@ -46,21 +46,21 @@ function LandingHeader() {
             {/* Language Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 px-3">
+                <Button variant="outline" size="sm" className="h-9 px-3 border-gray-300 text-gray-700 hover:bg-gray-50">
                   <Languages className="h-4 w-4 mr-2" />
                   {language === 'pt' ? 'PT' : 'EN'}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white border border-gray-200">
                 <DropdownMenuItem 
                   onClick={() => setLanguage('pt')}
-                  className={language === 'pt' ? 'bg-accent' : ''}
+                  className={language === 'pt' ? 'bg-gray-100' : ''}
                 >
                   🇵🇹 Português
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setLanguage('en')}
-                  className={language === 'en' ? 'bg-accent' : ''}
+                  className={language === 'en' ? 'bg-gray-100' : ''}
                 >
                   🇬🇧 English
                 </DropdownMenuItem>
@@ -78,7 +78,7 @@ function LandingHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="md:hidden text-gray-700 hover:bg-gray-100"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -121,7 +121,7 @@ function LandingHeader() {
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <LandingHeader />
       <div className="pt-16">
         <Hero />

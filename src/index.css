@@ -6,15 +6,6 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -32,6 +23,8 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #ffffff;
+  color: #213547;
 }
 
 h1 {
@@ -46,84 +39,37 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
   }
 }
 
@@ -185,95 +131,22 @@ html {
   }
 }
 
-/* Dark mode improvements - Force proper colors */
-.dark {
-  color-scheme: dark;
-}
-
-.dark * {
-  border-color: hsl(var(--border));
-}
-
-.dark .text-foreground {
-  color: hsl(var(--foreground)) !important;
-}
-
-.dark .bg-background {
-  background-color: hsl(var(--background)) !important;
-}
-
-.dark .text-muted-foreground {
-  color: hsl(var(--muted-foreground)) !important;
-}
-
-/* Button icon visibility fixes */
+/* Button and icon visibility fixes */
 button svg {
   color: inherit;
 }
 
-.dark button svg {
-  color: hsl(var(--foreground));
+/* Ensure all icons are visible */
+.text-gray-700 svg {
+  color: rgb(55 65 81);
 }
 
-.dark button[data-state="open"] svg {
-  color: hsl(var(--foreground));
+.text-gray-600 svg {
+  color: rgb(75 85 99);
 }
 
-/* Specific button variant fixes */
-.dark button[data-variant="outline"] svg {
-  color: hsl(var(--foreground));
-}
-
-.dark button[data-variant="ghost"] svg {
-  color: hsl(var(--foreground));
-}
-
-.dark button[data-variant="secondary"] svg {
-  color: hsl(var(--secondary-foreground));
-}
-
-/* Dropdown menu trigger fixes */
-.dark [data-radix-collection-item] svg {
-  color: hsl(var(--foreground));
-}
-
-/* Header button fixes */
-.dark header button svg {
-  color: hsl(var(--foreground)) !important;
-}
-
-.dark header [role="button"] svg {
-  color: hsl(var(--foreground)) !important;
-}
-
-/* Avatar fallback in dark mode */
-.dark .bg-primary\/10 {
-  background-color: hsl(var(--primary) / 0.1);
-  color: hsl(var(--primary));
-}
-
-/* Ensure all icons are visible in dark mode */
-.dark svg {
-  color: hsl(var(--foreground));
-}
-
-/* Override any conflicting styles */
-.dark button:not([data-variant="default"]):not([data-variant="destructive"]) svg {
-  color: hsl(var(--foreground)) !important;
-}
-
-/* Light mode icon fixes */
-button svg {
-  color: hsl(var(--foreground));
-}
-
-/* Ensure proper contrast in light mode */
-.light button[data-variant="outline"] svg {
-  color: hsl(var(--foreground));
-}
-
-.light button[data-variant="ghost"] svg {
-  color: hsl(var(--foreground));
+.text-white svg {
+  color: rgb(255 255 255);
 }
 
 /* Force icon visibility in all button states */
@@ -284,9 +157,31 @@ button:focus svg {
   color: inherit;
 }
 
-.dark button[data-state="open"] svg,
-.dark button[data-state="closed"] svg,
-.dark button:hover svg,
-.dark button:focus svg {
-  color: hsl(var(--foreground)) !important;
+/* Dropdown menu trigger fixes */
+[data-radix-collection-item] svg {
+  color: inherit;
+}
+
+/* Header button fixes */
+header button svg {
+  color: inherit !important;
+}
+
+header [role="button"] svg {
+  color: inherit !important;
+}
+
+/* Avatar fallback styling */
+.bg-blue-100 {
+  background-color: rgb(219 234 254);
+  color: rgb(29 78 216);
+}
+
+/* Ensure proper contrast */
+button[data-variant="outline"] svg {
+  color: inherit;
+}
+
+button[data-variant="ghost"] svg {
+  color: inherit;
 }

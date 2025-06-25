@@ -26,20 +26,20 @@ export function Pricing() {
   };
 
   return (
-    <section className="py-20 bg-muted/50">
+    <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-full text-sm font-medium">
+          <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
             <Star className="w-4 h-4 mr-2" />
             Planos Flexíveis
           </div>
           
-          <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
+          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
             Escolha o plano ideal
             <span className="text-blue-600"> para você</span>
           </h2>
           
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Comece gratuitamente e evolua conforme suas necessidades crescem. 
             Todos os planos incluem suporte e atualizações.
           </p>
@@ -47,17 +47,17 @@ export function Pricing() {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {/* Free Plan */}
-          <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="shadow-lg hover:shadow-xl transition-all duration-300 bg-white border border-gray-200">
             <CardHeader className="text-center space-y-4 pb-8">
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-foreground">Gratuito</h3>
-                <p className="text-muted-foreground">Perfeito para começar</p>
+                <h3 className="text-2xl font-bold text-gray-900">Gratuito</h3>
+                <p className="text-gray-600">Perfeito para começar</p>
               </div>
               
               <div className="space-y-1">
                 <div className="flex items-baseline justify-center">
-                  <span className="text-4xl font-bold text-foreground">€ 0</span>
-                  <span className="text-muted-foreground ml-1">/mês</span>
+                  <span className="text-4xl font-bold text-gray-900">€ 0</span>
+                  <span className="text-gray-600 ml-1">/mês</span>
                 </div>
               </div>
             </CardHeader>
@@ -67,14 +67,14 @@ export function Pricing() {
                 {freeFeatures.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-start">
                     <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">{feature}</span>
+                    <span className="text-gray-600">{feature}</span>
                   </li>
                 ))}
               </ul>
               
               <div className="pt-4">
                 <SignInButton mode="modal">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
                     Começar Gratuitamente
                   </Button>
                 </SignInButton>
@@ -87,7 +87,7 @@ export function Pricing() {
             const isPopular = product.name === 'GestFin Profissional';
             
             return (
-              <Card key={product.id} className={`relative ${isPopular ? 'ring-2 ring-blue-500 shadow-2xl scale-105' : 'shadow-lg'} hover:shadow-xl transition-all duration-300`}>
+              <Card key={product.id} className={`relative ${isPopular ? 'ring-2 ring-blue-500 shadow-2xl scale-105' : 'shadow-lg'} hover:shadow-xl transition-all duration-300 bg-white border border-gray-200`}>
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <Badge className="bg-blue-500 text-white px-4 py-1">
@@ -98,8 +98,8 @@ export function Pricing() {
                 
                 <CardHeader className="text-center space-y-4 pb-8">
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-foreground">{product.name}</h3>
-                    <p className="text-muted-foreground">
+                    <h3 className="text-2xl font-bold text-gray-900">{product.name}</h3>
+                    <p className="text-gray-600">
                       {product.name === 'GestFin Profissional' 
                         ? 'Para pequenas empresas' 
                         : 'Para empresas em crescimento'
@@ -109,10 +109,10 @@ export function Pricing() {
                   
                   <div className="space-y-1">
                     <div className="flex items-baseline justify-center">
-                      <span className="text-4xl font-bold text-foreground">
+                      <span className="text-4xl font-bold text-gray-900">
                         {formatPrice(product.price, product.currency)}
                       </span>
-                      <span className="text-muted-foreground ml-1">/mês</span>
+                      <span className="text-gray-600 ml-1">/mês</span>
                     </div>
                   </div>
                 </CardHeader>
@@ -122,14 +122,14 @@ export function Pricing() {
                     {product.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-start">
                         <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground">{feature}</span>
+                        <span className="text-gray-600">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   
                   <div className="pt-4">
                     <SignInButton mode="modal">
-                      <Button className={`w-full ${isPopular ? 'bg-blue-600 hover:bg-blue-700' : ''}`} variant={isPopular ? 'default' : 'outline'}>
+                      <Button className={`w-full ${isPopular ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-900 hover:bg-gray-800'} text-white`}>
                         Teste Grátis por 14 dias
                       </Button>
                     </SignInButton>
@@ -141,7 +141,7 @@ export function Pricing() {
         </div>
 
         <div className="text-center mt-12">
-          <p className="text-muted-foreground">
+          <p className="text-gray-600">
             Todos os planos incluem <strong>14 dias de teste grátis</strong> • Cancele a qualquer momento
           </p>
         </div>
