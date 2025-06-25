@@ -87,6 +87,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   
   // Error state
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const t = (key: TranslationKey): string => {
     return translations[language][key] || key;
@@ -118,18 +119,25 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Initialize Supabase auth
   useEffect(() => {
     const initializeAuth = async () => {
-      if (!isSignedIn || !user) return;
+      if (!isSignedIn || !user) {
+        setIsInitialized(false);
+        return;
+      }
       
       try {
+        console.log('Initializing Supabase auth for user:', user.id);
         const token = await getToken({ template: 'supabase' });
         if (token) {
           supabase.auth.setSession({
             access_token: token,
             refresh_token: '',
           });
+          console.log('Supabase auth initialized successfully');
         }
+        setIsInitialized(true);
       } catch (error) {
         console.error('Error initializing Supabase auth:', error);
+        setIsInitialized(true); // Still set to true to prevent infinite loading
       }
     };
 
@@ -139,25 +147,46 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Load data
   useEffect(() => {
     const loadData = async () => {
-      if (!isSignedIn || !user) return;
+      if (!isSignedIn || !user || !isInitialized) return;
+
+      console.log('Loading data for user:', user.id);
 
       try {
         // Load transactions
         setLoading(prev => ({ ...prev, transactions: true }));
-        const transactionsData = await getTransactions(user.id);
-        setTransactions(transactionsData);
+        try {
+          const transactionsData = await getTransactions(user.id);
+          setTransactions(transactionsData);
+          console.log('Loaded transactions:', transactionsData.length);
+        } catch (error) {
+          console.warn('Failed to load transactions:', error);
+          setTransactions([]); // Set empty array on error
+        }
         
         // Load categories
         setLoading(prev => ({ ...prev, categories: true }));
-        const categoriesData = await getCategories(user.id);
-        setCategories(categoriesData);
+        try {
+          const categoriesData = await getCategories(user.id);
+          setCategories(categoriesData);
+          console.log('Loaded categories:', categoriesData.length);
+        } catch (error) {
+          console.warn('Failed to load categories:', error);
+          setCategories([]); // Set empty array on error
+        }
         
         // Load payables
         setLoading(prev => ({ ...prev, payables: true }));
-        const payablesData = await getPayables(user.id);
-        setPayables(payablesData);
+        try {
+          const payablesData = await getPayables(user.id);
+          setPayables(payablesData);
+          console.log('Loaded payables:', payablesData.length);
+        } catch (error) {
+          console.warn('Failed to load payables:', error);
+          setPayables([]); // Set empty array on error
+        }
         
       } catch (error) {
+        console.error('Error in loadData:', error);
         handleError(error, 'carregamento de dados');
       } finally {
         setLoading({
@@ -169,7 +198,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     };
 
     loadData();
-  }, [isSignedIn, user]);
+  }, [isSignedIn, user, isInitialized]);
 
   // Transaction CRUD
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
