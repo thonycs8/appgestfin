@@ -185,20 +185,108 @@ html {
   }
 }
 
-/* Dark mode improvements */
+/* Dark mode improvements - Force proper colors */
+.dark {
+  color-scheme: dark;
+}
+
+.dark * {
+  border-color: hsl(var(--border));
+}
+
 .dark .text-foreground {
-  color: hsl(var(--foreground));
+  color: hsl(var(--foreground)) !important;
 }
 
 .dark .bg-background {
-  background-color: hsl(var(--background));
+  background-color: hsl(var(--background)) !important;
 }
 
-/* Button icon visibility in dark mode */
+.dark .text-muted-foreground {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Button icon visibility fixes */
+button svg {
+  color: inherit;
+}
+
 .dark button svg {
   color: hsl(var(--foreground));
 }
 
-.dark [data-state="open"] svg {
+.dark button[data-state="open"] svg {
   color: hsl(var(--foreground));
+}
+
+/* Specific button variant fixes */
+.dark button[data-variant="outline"] svg {
+  color: hsl(var(--foreground));
+}
+
+.dark button[data-variant="ghost"] svg {
+  color: hsl(var(--foreground));
+}
+
+.dark button[data-variant="secondary"] svg {
+  color: hsl(var(--secondary-foreground));
+}
+
+/* Dropdown menu trigger fixes */
+.dark [data-radix-collection-item] svg {
+  color: hsl(var(--foreground));
+}
+
+/* Header button fixes */
+.dark header button svg {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark header [role="button"] svg {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Avatar fallback in dark mode */
+.dark .bg-primary\/10 {
+  background-color: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+
+/* Ensure all icons are visible in dark mode */
+.dark svg {
+  color: hsl(var(--foreground));
+}
+
+/* Override any conflicting styles */
+.dark button:not([data-variant="default"]):not([data-variant="destructive"]) svg {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Light mode icon fixes */
+button svg {
+  color: hsl(var(--foreground));
+}
+
+/* Ensure proper contrast in light mode */
+.light button[data-variant="outline"] svg {
+  color: hsl(var(--foreground));
+}
+
+.light button[data-variant="ghost"] svg {
+  color: hsl(var(--foreground));
+}
+
+/* Force icon visibility in all button states */
+button[data-state="open"] svg,
+button[data-state="closed"] svg,
+button:hover svg,
+button:focus svg {
+  color: inherit;
+}
+
+.dark button[data-state="open"] svg,
+.dark button[data-state="closed"] svg,
+.dark button:hover svg,
+.dark button:focus svg {
+  color: hsl(var(--foreground)) !important;
 }
