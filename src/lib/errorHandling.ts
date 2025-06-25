@@ -1,5 +1,3 @@
-import { captureError, captureMessage, trackDatabaseOperation, trackFinancialOperation } from './sentry';
-
 export class AppError extends Error {
   constructor(
     message: string,
@@ -9,14 +7,6 @@ export class AppError extends Error {
   ) {
     super(message);
     this.name = 'AppError';
-    
-    // Report to Sentry
-    captureError(this, {
-      error_type: 'AppError',
-      error_code: code,
-      status_code: statusCode,
-      ...context,
-    });
   }
 }
 
@@ -66,14 +56,6 @@ export class DatabaseError extends AppError {
   constructor(message: string, code?: string, context?: Record<string, any>) {
     super(message, code || 'DATABASE_ERROR', 500, context);
     this.name = 'DatabaseError';
-    
-    // Track database operation failure
-    trackDatabaseOperation(
-      context?.operation || 'unknown',
-      context?.table || 'unknown',
-      false,
-      context?.duration
-    );
   }
 }
 
@@ -81,22 +63,12 @@ export class FinancialError extends AppError {
   constructor(message: string, operation: string, context?: Record<string, any>) {
     super(message, 'FINANCIAL_ERROR', 400, { operation, ...context });
     this.name = 'FinancialError';
-    
-    // Track financial operation failure
-    trackFinancialOperation(operation, {
-      success: false,
-      error: message,
-      ...context,
-    });
   }
 }
 
 export function handleError(error: unknown, context?: Record<string, any>): AppError {
-  // If it's already an AppError, just add context and return
+  // If it's already an AppError, just return it
   if (error instanceof AppError) {
-    if (context) {
-      captureError(error, context);
-    }
     return error;
   }
 
@@ -161,27 +133,12 @@ export function getErrorMessage(error: unknown, language: 'pt' | 'en' = 'pt'): s
 if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
-    
-    // Prevent the default browser behavior
     event.preventDefault();
-    
-    // Report to Sentry
-    captureError(new Error(`Unhandled Promise Rejection: ${event.reason}`), {
-      type: 'unhandled_promise_rejection',
-      reason: event.reason,
-    });
   });
 
   // Global error handler for uncaught exceptions
   window.addEventListener('error', (event) => {
     console.error('Uncaught error:', event.error);
-    
-    captureError(event.error || new Error(event.message), {
-      type: 'uncaught_exception',
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
-    });
   });
 }
 
@@ -200,9 +157,6 @@ export function reportError(error: unknown, context?: Record<string, any>) {
       timestamp: new Date().toISOString(),
     });
   }
-  
-  // Always report to Sentry
-  captureError(appError, context);
 }
 
 // Performance monitoring wrapper
@@ -213,14 +167,6 @@ export async function withErrorHandling<T>(
 ): Promise<T> {
   try {
     const result = await fn();
-    
-    // Track successful operation
-    if (context?.type === 'financial') {
-      trackFinancialOperation(operation, { success: true, ...context });
-    } else if (context?.type === 'database') {
-      trackDatabaseOperation(operation, context.table || 'unknown', true, context.duration);
-    }
-    
     return result;
   } catch (error) {
     const appError = handleError(error, { operation, ...context });

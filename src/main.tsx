@@ -1,12 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
-import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import App from './App.tsx';
 import './index.css';
-
-// Initialize Sentry before anything else
-initSentry();
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -60,10 +56,8 @@ function ErrorFallback({ error, resetError }: { error: Error; resetError: () => 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <SentryErrorBoundary fallback={ErrorFallback} showDialog={false}>
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-        <App />
-      </ClerkProvider>
-    </SentryErrorBoundary>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <App />
+    </ClerkProvider>
   </StrictMode>
 );

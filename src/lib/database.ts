@@ -1,7 +1,6 @@
 import { supabase, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
 import { Transaction, Category, Payable } from '@/types';
 import { DatabaseError, ValidationError, RateLimitError } from '@/lib/errorHandling';
-import { trackDatabaseOperation, addBreadcrumb } from '@/lib/sentry';
 
 // Helper function to ensure user exists in database
 async function ensureUserExists(userId: string, userEmail?: string) {
@@ -16,8 +15,6 @@ async function ensureUserExists(userId: string, userEmail?: string) {
       console.warn('Warning creating user record:', error);
       // Don't throw error, just log warning
     }
-    
-    addBreadcrumb('User existence ensured in database', 'database');
   } catch (error) {
     console.warn('Error ensuring user exists:', error);
     // Don't throw error, just log warning - the RLS policies should handle this
@@ -77,9 +74,6 @@ export async function createTransaction(
         hint: error.hint
       });
     }
-
-    trackDatabaseOperation('create', 'transactions', true, Date.now() - startTime);
-    addBreadcrumb('Transaction created in database', 'database');
     
     return {
       id: data.id,
@@ -92,7 +86,6 @@ export async function createTransaction(
       status: data.status
     };
   } catch (error) {
-    trackDatabaseOperation('create', 'transactions', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error creating transaction', undefined, {
       operation: 'create_transaction',
@@ -119,8 +112,6 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
         duration: Date.now() - startTime,
       });
     }
-
-    trackDatabaseOperation('select', 'transactions', true, Date.now() - startTime);
     
     return (data || []).map(item => ({
       id: item.id,
@@ -133,7 +124,6 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
       status: item.status
     }));
   } catch (error) {
-    trackDatabaseOperation('select', 'transactions', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error fetching transactions', undefined, {
       operation: 'get_transactions',
@@ -190,9 +180,6 @@ export async function updateTransaction(
         duration: Date.now() - startTime,
       });
     }
-
-    trackDatabaseOperation('update', 'transactions', true, Date.now() - startTime);
-    addBreadcrumb('Transaction updated in database', 'database');
     
     return {
       id: data.id,
@@ -205,7 +192,6 @@ export async function updateTransaction(
       status: data.status
     };
   } catch (error) {
-    trackDatabaseOperation('update', 'transactions', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error updating transaction', undefined, {
       operation: 'update_transaction',
@@ -233,11 +219,7 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
         duration: Date.now() - startTime,
       });
     }
-
-    trackDatabaseOperation('delete', 'transactions', true, Date.now() - startTime);
-    addBreadcrumb('Transaction deleted from database', 'database');
   } catch (error) {
-    trackDatabaseOperation('delete', 'transactions', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error deleting transaction', undefined, {
       operation: 'delete_transaction',
@@ -288,9 +270,6 @@ export async function createCategory(
         hint: error.hint
       });
     }
-
-    trackDatabaseOperation('create', 'categories', true, Date.now() - startTime);
-    addBreadcrumb('Category created in database', 'database');
     
     return {
       id: data.id,
@@ -302,7 +281,6 @@ export async function createCategory(
       createdAt: data.created_at
     };
   } catch (error) {
-    trackDatabaseOperation('create', 'categories', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error creating category', undefined, {
       operation: 'create_category',
@@ -329,8 +307,6 @@ export async function getCategories(userId: string): Promise<Category[]> {
         duration: Date.now() - startTime,
       });
     }
-
-    trackDatabaseOperation('select', 'categories', true, Date.now() - startTime);
     
     return (data || []).map(item => ({
       id: item.id,
@@ -342,7 +318,6 @@ export async function getCategories(userId: string): Promise<Category[]> {
       createdAt: item.created_at
     }));
   } catch (error) {
-    trackDatabaseOperation('select', 'categories', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error fetching categories', undefined, {
       operation: 'get_categories',
@@ -402,9 +377,6 @@ export async function createPayable(
         hint: error.hint
       });
     }
-
-    trackDatabaseOperation('create', 'payables', true, Date.now() - startTime);
-    addBreadcrumb('Payable created in database', 'database');
     
     return {
       id: data.id,
@@ -416,7 +388,6 @@ export async function createPayable(
       supplier: data.supplier
     };
   } catch (error) {
-    trackDatabaseOperation('create', 'payables', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error creating payable', undefined, {
       operation: 'create_payable',
@@ -443,8 +414,6 @@ export async function getPayables(userId: string): Promise<Payable[]> {
         duration: Date.now() - startTime,
       });
     }
-
-    trackDatabaseOperation('select', 'payables', true, Date.now() - startTime);
     
     return (data || []).map(item => ({
       id: item.id,
@@ -456,7 +425,6 @@ export async function getPayables(userId: string): Promise<Payable[]> {
       supplier: item.supplier
     }));
   } catch (error) {
-    trackDatabaseOperation('select', 'payables', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error fetching payables', undefined, {
       operation: 'get_payables',
@@ -512,9 +480,6 @@ export async function updatePayable(
         duration: Date.now() - startTime,
       });
     }
-
-    trackDatabaseOperation('update', 'payables', true, Date.now() - startTime);
-    addBreadcrumb('Payable updated in database', 'database');
     
     return {
       id: data.id,
@@ -526,7 +491,6 @@ export async function updatePayable(
       supplier: data.supplier
     };
   } catch (error) {
-    trackDatabaseOperation('update', 'payables', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error updating payable', undefined, {
       operation: 'update_payable',
@@ -554,11 +518,7 @@ export async function deletePayable(id: string, userId: string): Promise<void> {
         duration: Date.now() - startTime,
       });
     }
-
-    trackDatabaseOperation('delete', 'payables', true, Date.now() - startTime);
-    addBreadcrumb('Payable deleted from database', 'database');
   } catch (error) {
-    trackDatabaseOperation('delete', 'payables', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error deleting payable', undefined, {
       operation: 'delete_payable',
