@@ -336,10 +336,10 @@ export function Expenses() {
                       <p className="text-lg font-bold text-red-600">
                         -{formatCurrency(transaction.amount)}
                       </p>
-                      <Badge variant="outline" className={`text-xs ${
+                      <Badge variant="outline" className={`text-xs bg-white ${
                         transaction.category === 'empresa' 
-                          ? 'border-blue-200 text-blue-700 bg-blue-50' 
-                          : 'border-purple-200 text-purple-700 bg-purple-50'
+                          ? 'border-blue-200 text-blue-700' 
+                          : 'border-purple-200 text-purple-700'
                       }`}>
                         {transaction.category === 'empresa' ? t('company') : t('family')}
                       </Badge>
