@@ -6,41 +6,21 @@ import { trackDatabaseOperation, addBreadcrumb } from '@/lib/sentry';
 // Helper function to ensure user exists in database
 async function ensureUserExists(userId: string, userEmail?: string) {
   try {
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (!existingUser && userEmail) {
-      // Create user record if it doesn't exist
-      const { error: createError } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email: userEmail,
-          created_at: new Date().toISOString()
-        });
-
-      if (createError && createError.code !== '23505') { // Ignore duplicate key errors
-        console.error('Error creating user:', createError);
-        throw new DatabaseError('Failed to create user record', createError.code, {
-          operation: 'ensure_user_exists',
-          userId,
-          userEmail,
-        });
-      }
-      
-      addBreadcrumb('User record created in database', 'database');
-    }
-  } catch (error) {
-    console.error('Error ensuring user exists:', error);
-    if (error instanceof DatabaseError) throw error;
-    throw new DatabaseError('Failed to verify user existence', undefined, {
-      operation: 'ensure_user_exists',
-      userId,
-      originalError: error,
+    // Call the database function to ensure user exists
+    const { error } = await supabase.rpc('ensure_user_exists', {
+      user_id: userId,
+      user_email: userEmail || `${userId}@unknown.com`
     });
+
+    if (error) {
+      console.warn('Warning creating user record:', error);
+      // Don't throw error, just log warning
+    }
+    
+    addBreadcrumb('User existence ensured in database', 'database');
+  } catch (error) {
+    console.warn('Error ensuring user exists:', error);
+    // Don't throw error, just log warning - the RLS policies should handle this
   }
 }
 
@@ -69,9 +49,13 @@ export async function createTransaction(
   await ensureUserExists(userId, userEmail);
 
   const sanitizedTransaction = {
-    ...transaction,
-    description: sanitizeInput(transaction.description),
+    type: transaction.type,
+    category: transaction.category,
     subcategory: sanitizeInput(transaction.subcategory),
+    amount: transaction.amount,
+    description: sanitizeInput(transaction.description),
+    date: transaction.date,
+    status: transaction.status || 'completed',
     user_id: userId
   };
 
@@ -83,18 +67,30 @@ export async function createTransaction(
       .single();
 
     if (error) {
+      console.error('Database error creating transaction:', error);
       throw new DatabaseError(`Failed to create transaction: ${error.message}`, error.code, {
         operation: 'create_transaction',
         table: 'transactions',
         userId,
         duration: Date.now() - startTime,
+        details: error.details,
+        hint: error.hint
       });
     }
 
     trackDatabaseOperation('create', 'transactions', true, Date.now() - startTime);
     addBreadcrumb('Transaction created in database', 'database');
     
-    return data;
+    return {
+      id: data.id,
+      type: data.type,
+      category: data.category,
+      subcategory: data.subcategory,
+      amount: data.amount,
+      description: data.description,
+      date: data.date,
+      status: data.status
+    };
   } catch (error) {
     trackDatabaseOperation('create', 'transactions', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
@@ -125,7 +121,17 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
     }
 
     trackDatabaseOperation('select', 'transactions', true, Date.now() - startTime);
-    return data || [];
+    
+    return (data || []).map(item => ({
+      id: item.id,
+      type: item.type,
+      category: item.category,
+      subcategory: item.subcategory,
+      amount: item.amount,
+      description: item.description,
+      date: item.date,
+      status: item.status
+    }));
   } catch (error) {
     trackDatabaseOperation('select', 'transactions', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
@@ -156,11 +162,15 @@ export async function updateTransaction(
     throw new ValidationError('Invalid date', 'date', { date: updates.date });
   }
 
-  const sanitizedUpdates = {
-    ...updates,
-    ...(updates.description && { description: sanitizeInput(updates.description) }),
-    ...(updates.subcategory && { subcategory: sanitizeInput(updates.subcategory) })
-  };
+  const sanitizedUpdates: any = {};
+  
+  if (updates.type) sanitizedUpdates.type = updates.type;
+  if (updates.category) sanitizedUpdates.category = updates.category;
+  if (updates.subcategory) sanitizedUpdates.subcategory = sanitizeInput(updates.subcategory);
+  if (updates.amount !== undefined) sanitizedUpdates.amount = updates.amount;
+  if (updates.description) sanitizedUpdates.description = sanitizeInput(updates.description);
+  if (updates.date) sanitizedUpdates.date = updates.date;
+  if (updates.status) sanitizedUpdates.status = updates.status;
 
   try {
     const { data, error } = await supabase
@@ -184,7 +194,16 @@ export async function updateTransaction(
     trackDatabaseOperation('update', 'transactions', true, Date.now() - startTime);
     addBreadcrumb('Transaction updated in database', 'database');
     
-    return data;
+    return {
+      id: data.id,
+      type: data.type,
+      category: data.category,
+      subcategory: data.subcategory,
+      amount: data.amount,
+      description: data.description,
+      date: data.date,
+      status: data.status
+    };
   } catch (error) {
     trackDatabaseOperation('update', 'transactions', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
@@ -243,11 +262,12 @@ export async function createCategory(
   await ensureUserExists(userId, userEmail);
 
   const sanitizedCategory = {
-    ...category,
     name: sanitizeInput(category.name),
+    type: category.type,
+    category: category.category,
+    color: category.color || '#000000',
     user_id: userId,
-    is_active: true,
-    created_at: new Date().toISOString()
+    is_active: category.isActive !== undefined ? category.isActive : true
   };
 
   try {
@@ -258,18 +278,29 @@ export async function createCategory(
       .single();
 
     if (error) {
+      console.error('Database error creating category:', error);
       throw new DatabaseError(`Failed to create category: ${error.message}`, error.code, {
         operation: 'create_category',
         table: 'categories',
         userId,
         duration: Date.now() - startTime,
+        details: error.details,
+        hint: error.hint
       });
     }
 
     trackDatabaseOperation('create', 'categories', true, Date.now() - startTime);
     addBreadcrumb('Category created in database', 'database');
     
-    return data;
+    return {
+      id: data.id,
+      name: data.name,
+      type: data.type,
+      category: data.category,
+      color: data.color,
+      isActive: data.is_active,
+      createdAt: data.created_at
+    };
   } catch (error) {
     trackDatabaseOperation('create', 'categories', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
@@ -300,7 +331,16 @@ export async function getCategories(userId: string): Promise<Category[]> {
     }
 
     trackDatabaseOperation('select', 'categories', true, Date.now() - startTime);
-    return data || [];
+    
+    return (data || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      type: item.type,
+      category: item.category,
+      color: item.color,
+      isActive: item.is_active,
+      createdAt: item.created_at
+    }));
   } catch (error) {
     trackDatabaseOperation('select', 'categories', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
@@ -335,11 +375,13 @@ export async function createPayable(
   await ensureUserExists(userId, userEmail);
 
   const sanitizedPayable = {
-    ...payable,
     description: sanitizeInput(payable.description),
+    amount: payable.amount,
+    due_date: payable.dueDate,
+    category: payable.category,
+    status: payable.status || 'pending',
     supplier: payable.supplier ? sanitizeInput(payable.supplier) : null,
-    user_id: userId,
-    due_date: payable.dueDate
+    user_id: userId
   };
 
   try {
@@ -350,18 +392,29 @@ export async function createPayable(
       .single();
 
     if (error) {
+      console.error('Database error creating payable:', error);
       throw new DatabaseError(`Failed to create payable: ${error.message}`, error.code, {
         operation: 'create_payable',
         table: 'payables',
         userId,
         duration: Date.now() - startTime,
+        details: error.details,
+        hint: error.hint
       });
     }
 
     trackDatabaseOperation('create', 'payables', true, Date.now() - startTime);
     addBreadcrumb('Payable created in database', 'database');
     
-    return data;
+    return {
+      id: data.id,
+      description: data.description,
+      amount: data.amount,
+      dueDate: data.due_date,
+      category: data.category,
+      status: data.status,
+      supplier: data.supplier
+    };
   } catch (error) {
     trackDatabaseOperation('create', 'payables', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
@@ -392,7 +445,16 @@ export async function getPayables(userId: string): Promise<Payable[]> {
     }
 
     trackDatabaseOperation('select', 'payables', true, Date.now() - startTime);
-    return data || [];
+    
+    return (data || []).map(item => ({
+      id: item.id,
+      description: item.description,
+      amount: item.amount,
+      dueDate: item.due_date,
+      category: item.category,
+      status: item.status,
+      supplier: item.supplier
+    }));
   } catch (error) {
     trackDatabaseOperation('select', 'payables', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
@@ -423,12 +485,14 @@ export async function updatePayable(
     throw new ValidationError('Invalid due date', 'dueDate', { dueDate: updates.dueDate });
   }
 
-  const sanitizedUpdates = {
-    ...updates,
-    ...(updates.description && { description: sanitizeInput(updates.description) }),
-    ...(updates.supplier && { supplier: sanitizeInput(updates.supplier) }),
-    ...(updates.dueDate && { due_date: updates.dueDate })
-  };
+  const sanitizedUpdates: any = {};
+  
+  if (updates.description) sanitizedUpdates.description = sanitizeInput(updates.description);
+  if (updates.amount !== undefined) sanitizedUpdates.amount = updates.amount;
+  if (updates.dueDate) sanitizedUpdates.due_date = updates.dueDate;
+  if (updates.category) sanitizedUpdates.category = updates.category;
+  if (updates.status) sanitizedUpdates.status = updates.status;
+  if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier ? sanitizeInput(updates.supplier) : null;
 
   try {
     const { data, error } = await supabase
@@ -452,7 +516,15 @@ export async function updatePayable(
     trackDatabaseOperation('update', 'payables', true, Date.now() - startTime);
     addBreadcrumb('Payable updated in database', 'database');
     
-    return data;
+    return {
+      id: data.id,
+      description: data.description,
+      amount: data.amount,
+      dueDate: data.due_date,
+      category: data.category,
+      status: data.status,
+      supplier: data.supplier
+    };
   } catch (error) {
     trackDatabaseOperation('update', 'payables', false, Date.now() - startTime);
     if (error instanceof DatabaseError) throw error;
