@@ -1,87 +1,131 @@
+import { captureError, captureMessage, trackDatabaseOperation, trackFinancialOperation } from './sentry';
+
 export class AppError extends Error {
   constructor(
     message: string,
     public code?: string,
-    public statusCode?: number
+    public statusCode?: number,
+    public context?: Record<string, any>
   ) {
     super(message);
     this.name = 'AppError';
+    
+    // Report to Sentry
+    captureError(this, {
+      error_type: 'AppError',
+      error_code: code,
+      status_code: statusCode,
+      ...context,
+    });
   }
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, field?: string) {
-    super(message, 'VALIDATION_ERROR', 400);
+  constructor(message: string, field?: string, context?: Record<string, any>) {
+    super(message, 'VALIDATION_ERROR', 400, { field, ...context });
     this.name = 'ValidationError';
   }
 }
 
 export class AuthenticationError extends AppError {
-  constructor(message: string = 'Authentication required') {
-    super(message, 'AUTH_ERROR', 401);
+  constructor(message: string = 'Authentication required', context?: Record<string, any>) {
+    super(message, 'AUTH_ERROR', 401, context);
     this.name = 'AuthenticationError';
   }
 }
 
 export class AuthorizationError extends AppError {
-  constructor(message: string = 'Insufficient permissions') {
-    super(message, 'AUTHORIZATION_ERROR', 403);
+  constructor(message: string = 'Insufficient permissions', context?: Record<string, any>) {
+    super(message, 'AUTHORIZATION_ERROR', 403, context);
     this.name = 'AuthorizationError';
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(message: string = 'Resource not found') {
-    super(message, 'NOT_FOUND', 404);
+  constructor(message: string = 'Resource not found', context?: Record<string, any>) {
+    super(message, 'NOT_FOUND', 404, context);
     this.name = 'NotFoundError';
   }
 }
 
 export class RateLimitError extends AppError {
-  constructor(message: string = 'Rate limit exceeded') {
-    super(message, 'RATE_LIMIT', 429);
+  constructor(message: string = 'Rate limit exceeded', context?: Record<string, any>) {
+    super(message, 'RATE_LIMIT', 429, context);
     this.name = 'RateLimitError';
   }
 }
 
 export class ServerError extends AppError {
-  constructor(message: string = 'Internal server error') {
-    super(message, 'SERVER_ERROR', 500);
+  constructor(message: string = 'Internal server error', context?: Record<string, any>) {
+    super(message, 'SERVER_ERROR', 500, context);
     this.name = 'ServerError';
   }
 }
 
-export function handleError(error: unknown): AppError {
+export class DatabaseError extends AppError {
+  constructor(message: string, code?: string, context?: Record<string, any>) {
+    super(message, code || 'DATABASE_ERROR', 500, context);
+    this.name = 'DatabaseError';
+    
+    // Track database operation failure
+    trackDatabaseOperation(
+      context?.operation || 'unknown',
+      context?.table || 'unknown',
+      false,
+      context?.duration
+    );
+  }
+}
+
+export class FinancialError extends AppError {
+  constructor(message: string, operation: string, context?: Record<string, any>) {
+    super(message, 'FINANCIAL_ERROR', 400, { operation, ...context });
+    this.name = 'FinancialError';
+    
+    // Track financial operation failure
+    trackFinancialOperation(operation, {
+      success: false,
+      error: message,
+      ...context,
+    });
+  }
+}
+
+export function handleError(error: unknown, context?: Record<string, any>): AppError {
+  // If it's already an AppError, just add context and return
   if (error instanceof AppError) {
+    if (context) {
+      captureError(error, context);
+    }
     return error;
   }
 
   if (error instanceof Error) {
     // Handle specific error types
     if (error.message.includes('rate limit')) {
-      return new RateLimitError(error.message);
+      return new RateLimitError(error.message, context);
     }
     
     if (error.message.includes('unauthorized') || error.message.includes('authentication')) {
-      return new AuthenticationError(error.message);
+      return new AuthenticationError(error.message, context);
     }
     
     if (error.message.includes('forbidden') || error.message.includes('permission')) {
-      return new AuthorizationError(error.message);
+      return new AuthorizationError(error.message, context);
     }
     
     if (error.message.includes('not found')) {
-      return new NotFoundError(error.message);
+      return new NotFoundError(error.message, context);
     }
     
     if (error.message.includes('validation') || error.message.includes('invalid')) {
-      return new ValidationError(error.message);
+      return new ValidationError(error.message, undefined, context);
     }
     
-    return new ServerError(error.message);
+    return new ServerError(error.message, context);
   }
 
-  return new ServerError('An unexpected error occurred');
+  return new ServerError('An unexpected error occurred', { originalError: error, ...context });
 }
 
 export function getErrorMessage(error: unknown, language: 'pt' | 'en' = 'pt'): string {
@@ -94,7 +138,9 @@ export function getErrorMessage(error: unknown, language: 'pt' | 'en' = 'pt'): s
       AUTHORIZATION_ERROR: 'Permissões insuficientes',
       NOT_FOUND: 'Recurso não encontrado',
       RATE_LIMIT: 'Muitas tentativas. Tente novamente em alguns minutos',
-      SERVER_ERROR: 'Erro interno do servidor'
+      SERVER_ERROR: 'Erro interno do servidor',
+      DATABASE_ERROR: 'Erro no banco de dados',
+      FINANCIAL_ERROR: 'Erro na operação financeira'
     },
     en: {
       VALIDATION_ERROR: 'Invalid data provided',
@@ -102,7 +148,9 @@ export function getErrorMessage(error: unknown, language: 'pt' | 'en' = 'pt'): s
       AUTHORIZATION_ERROR: 'Insufficient permissions',
       NOT_FOUND: 'Resource not found',
       RATE_LIMIT: 'Too many attempts. Please try again in a few minutes',
-      SERVER_ERROR: 'Internal server error'
+      SERVER_ERROR: 'Internal server error',
+      DATABASE_ERROR: 'Database error',
+      FINANCIAL_ERROR: 'Financial operation error'
     }
   };
 
@@ -117,24 +165,65 @@ if (typeof window !== 'undefined') {
     // Prevent the default browser behavior
     event.preventDefault();
     
-    // You could send this to an error reporting service
-    // reportError(event.reason);
+    // Report to Sentry
+    captureError(new Error(`Unhandled Promise Rejection: ${event.reason}`), {
+      type: 'unhandled_promise_rejection',
+      reason: event.reason,
+    });
+  });
+
+  // Global error handler for uncaught exceptions
+  window.addEventListener('error', (event) => {
+    console.error('Uncaught error:', event.error);
+    
+    captureError(event.error || new Error(event.message), {
+      type: 'uncaught_exception',
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+    });
   });
 }
 
-// Error reporting function (placeholder)
+// Error reporting function
 export function reportError(error: unknown, context?: Record<string, any>) {
-  const appError = handleError(error);
+  const appError = handleError(error, context);
   
-  // In production, send to error reporting service like Sentry
-  console.error('Error reported:', {
-    message: appError.message,
-    code: appError.code,
-    statusCode: appError.statusCode,
-    stack: appError.stack,
-    context,
-    timestamp: new Date().toISOString(),
-    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
-    url: typeof window !== 'undefined' ? window.location.href : 'server'
-  });
+  // Log to console in development
+  if (import.meta.env.DEV) {
+    console.error('Error reported:', {
+      message: appError.message,
+      code: appError.code,
+      statusCode: appError.statusCode,
+      stack: appError.stack,
+      context: appError.context,
+      timestamp: new Date().toISOString(),
+    });
+  }
+  
+  // Always report to Sentry
+  captureError(appError, context);
+}
+
+// Performance monitoring wrapper
+export async function withErrorHandling<T>(
+  operation: string,
+  fn: () => Promise<T>,
+  context?: Record<string, any>
+): Promise<T> {
+  try {
+    const result = await fn();
+    
+    // Track successful operation
+    if (context?.type === 'financial') {
+      trackFinancialOperation(operation, { success: true, ...context });
+    } else if (context?.type === 'database') {
+      trackDatabaseOperation(operation, context.table || 'unknown', true, context.duration);
+    }
+    
+    return result;
+  } catch (error) {
+    const appError = handleError(error, { operation, ...context });
+    throw appError;
+  }
 }
