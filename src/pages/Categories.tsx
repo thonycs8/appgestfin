@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit, Trash2, Tags, Building2, Home, TrendingUp, TrendingDown, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Tags, TrendingUp, TrendingDown, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,14 +14,14 @@ import { Category } from '@/types';
 import { formatCurrency } from '@/lib/i18n';
 
 const colorOptions = [
-  { name: 'Preto', value: '#000000' },
-  { name: 'Cinza Escuro', value: '#374151' },
-  { name: 'Cinza Médio', value: '#6b7280' },
-  { name: 'Cinza Claro', value: '#9ca3af' },
-  { name: 'Azul Escuro', value: '#1e293b' },
-  { name: 'Verde Escuro', value: '#064e3b' },
-  { name: 'Vermelho Escuro', value: '#7f1d1d' },
-  { name: 'Roxo Escuro', value: '#581c87' }
+  { name: 'Verde', value: '#22c55e' },
+  { name: 'Azul', value: '#3b82f6' },
+  { name: 'Vermelho', value: '#ef4444' },
+  { name: 'Roxo', value: '#8b5cf6' },
+  { name: 'Laranja', value: '#f97316' },
+  { name: 'Rosa', value: '#ec4899' },
+  { name: 'Amarelo', value: '#eab308' },
+  { name: 'Cinza', value: '#6b7280' }
 ];
 
 export function Categories() {
@@ -30,24 +30,23 @@ export function Categories() {
   const [newCategory, setNewCategory] = useState({
     name: '',
     type: '' as 'income' | 'expense' | '',
-    category: '' as 'empresa' | 'familia' | '',
-    color: '#000000'
+    color: '#22c55e'
   });
 
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleCreateCategory = () => {
-    if (!newCategory.name || !newCategory.type || !newCategory.category) return;
+    if (!newCategory.name || !newCategory.type) return;
 
     addCategory({
       name: newCategory.name,
       type: newCategory.type as 'income' | 'expense',
-      category: newCategory.category as 'empresa' | 'familia',
-      color: newCategory.color
+      color: newCategory.color,
+      isActive: true
     });
     
-    setNewCategory({ name: '', type: '', category: '', color: '#000000' });
+    setNewCategory({ name: '', type: '', color: '#22c55e' });
     setIsDialogOpen(false);
   };
 
@@ -56,24 +55,22 @@ export function Categories() {
     setNewCategory({
       name: category.name,
       type: category.type,
-      category: category.category,
       color: category.color
     });
     setIsDialogOpen(true);
   };
 
   const handleUpdateCategory = () => {
-    if (!editingCategory || !newCategory.name || !newCategory.type || !newCategory.category) return;
+    if (!editingCategory || !newCategory.name || !newCategory.type) return;
 
     updateCategory(editingCategory.id, {
       name: newCategory.name,
       type: newCategory.type as 'income' | 'expense',
-      category: newCategory.category as 'empresa' | 'familia',
       color: newCategory.color
     });
     
     setEditingCategory(null);
-    setNewCategory({ name: '', type: '', category: '', color: '#000000' });
+    setNewCategory({ name: '', type: '', color: '#22c55e' });
     setIsDialogOpen(false);
   };
 
@@ -117,7 +114,7 @@ export function Categories() {
                   className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium"
                   onClick={() => {
                     setEditingCategory(null);
-                    setNewCategory({ name: '', type: '', category: '', color: '#000000' });
+                    setNewCategory({ name: '', type: '', color: '#22c55e' });
                   }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -134,7 +131,7 @@ export function Categories() {
                   <div>
                     <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nome da Categoria</Label>
                     <Input 
-                      placeholder="Ex: Marketing, Alimentação..."
+                      placeholder="Ex: Marketing, Alimentação, Salário..."
                       value={newCategory.name}
                       onChange={(e) => setNewCategory(prev => ({...prev, name: e.target.value}))}
                       className="mt-1 border-gray-300 focus:border-black focus:ring-black"
@@ -151,20 +148,6 @@ export function Categories() {
                       <SelectContent className="bg-white border border-gray-200">
                         <SelectItem value="income">Receita</SelectItem>
                         <SelectItem value="expense">Despesa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="category" className="text-sm font-medium text-gray-700">Grupo</Label>
-                    <Select value={newCategory.category} onValueChange={(value: 'empresa' | 'familia') => 
-                      setNewCategory(prev => ({...prev, category: value}))
-                    }>
-                      <SelectTrigger className="mt-1 border-gray-300 focus:border-black focus:ring-black">
-                        <SelectValue placeholder="Selecione o grupo" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border border-gray-200">
-                        <SelectItem value="empresa">Empresa</SelectItem>
-                        <SelectItem value="familia">Família</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -291,13 +274,6 @@ export function Categories() {
                             <div>
                               <p className="font-medium text-black">{category.name}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs border-gray-300 text-gray-600">
-                                  {category.category === 'empresa' ? (
-                                    <><Building2 className="h-3 w-3 mr-1" />Empresa</>
-                                  ) : (
-                                    <><Home className="h-3 w-3 mr-1" />Família</>
-                                  )}
-                                </Badge>
                                 {!category.isActive && (
                                   <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
                                     <EyeOff className="h-3 w-3 mr-1" />Inativa
@@ -388,13 +364,6 @@ export function Categories() {
                             <div>
                               <p className="font-medium text-black">{category.name}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs border-gray-300 text-gray-600">
-                                  {category.category === 'empresa' ? (
-                                    <><Building2 className="h-3 w-3 mr-1" />Empresa</>
-                                  ) : (
-                                    <><Home className="h-3 w-3 mr-1" />Família</>
-                                  )}
-                                </Badge>
                                 {!category.isActive && (
                                   <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
                                     <EyeOff className="h-3 w-3 mr-1" />Inativa
