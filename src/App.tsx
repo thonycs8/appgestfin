@@ -19,7 +19,7 @@ import { Alerts } from '@/pages/Alerts';
 import { TermsOfService } from '@/components/legal/TermsOfService';
 import { PrivacyPolicy } from '@/components/legal/PrivacyPolicy';
 import { GDPRCompliance } from '@/components/legal/GDPRCompliance';
-import { AppProvider } from '@/contexts/AppContext';
+import { AppProvider, useApp } from '@/contexts/AppContext';
 import { Toaster } from '@/components/ui/toaster';
 import './App.css';
 
@@ -173,36 +173,33 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-white">
-        <SignedOut>
-          <LandingPage />
-        </SignedOut>
+      <AppProvider>
+        <div className="min-h-screen bg-white">
+          <SignedOut>
+            <LandingPage />
+          </SignedOut>
 
-        <SignedIn>
-          <AppProvider>
-            {({ language }) => (
-              <AppContent 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab}
-                user={user}
-                language={language}
-              />
-            )}
-          </AppProvider>
-        </SignedIn>
-        <Toaster />
-      </div>
+          <SignedIn>
+            <AppContent 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab}
+              user={user}
+            />
+          </SignedIn>
+          <Toaster />
+        </div>
+      </AppProvider>
     </ErrorBoundary>
   );
 }
 
-function AppContent({ activeTab, setActiveTab, user, language }: { 
+function AppContent({ activeTab, setActiveTab, user }: { 
   activeTab: string; 
   setActiveTab: (tab: string) => void;
   user: any;
-  language: 'pt' | 'en';
 }) {
   const [isLoading, setIsLoading] = useState(true);
+  const { language } = useApp();
   
   useEffect(() => {
     // Simulate loading time and then show content
