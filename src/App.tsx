@@ -16,7 +16,11 @@ import { Subscription } from '@/pages/Subscription';
 import { SubscriptionSuccess } from '@/pages/SubscriptionSuccess';
 import { SubscriptionCancel } from '@/pages/SubscriptionCancel';
 import { Alerts } from '@/pages/Alerts';
+import { TermsOfService } from '@/components/legal/TermsOfService';
+import { PrivacyPolicy } from '@/components/legal/PrivacyPolicy';
+import { GDPRCompliance } from '@/components/legal/GDPRCompliance';
 import { AppProvider } from '@/contexts/AppContext';
+import { Toaster } from '@/components/ui/toaster';
 import './App.css';
 
 const pageComponents = {
@@ -33,7 +37,10 @@ const pageComponents = {
   'subscription-success': SubscriptionSuccess,
   'subscription-cancel': SubscriptionCancel,
   'admin-users': AdminUsers,
-  'admin-system': AdminSystem
+  'admin-system': AdminSystem,
+  'terms': TermsOfService,
+  'privacy': PrivacyPolicy,
+  'gdpr': GDPRCompliance
 };
 
 const pageTitles = {
@@ -51,7 +58,10 @@ const pageTitles = {
     'subscription-success': 'Assinatura Confirmada',
     'subscription-cancel': 'Assinatura Cancelada',
     'admin-users': 'Gerenciar Usuários',
-    'admin-system': 'Sistema'
+    'admin-system': 'Sistema',
+    'terms': 'Termos de Serviço',
+    'privacy': 'Política de Privacidade',
+    'gdpr': 'Conformidade GDPR'
   },
   en: {
     dashboard: 'Dashboard',
@@ -67,7 +77,10 @@ const pageTitles = {
     'subscription-success': 'Subscription Confirmed',
     'subscription-cancel': 'Subscription Cancelled',
     'admin-users': 'Manage Users',
-    'admin-system': 'System'
+    'admin-system': 'System',
+    'terms': 'Terms of Service',
+    'privacy': 'Privacy Policy',
+    'gdpr': 'GDPR Compliance'
   }
 };
 
@@ -101,6 +114,7 @@ function App() {
             user={user}
           />
         </SignedIn>
+        <Toaster />
       </>
     </AppProvider>
   );
@@ -113,15 +127,21 @@ function AppContent({ activeTab, setActiveTab, user }: {
 }) {
   const PageComponent = pageComponents[activeTab as keyof typeof pageComponents];
   const isAdminPage = activeTab.startsWith('admin-');
-  const isFullPageRoute = ['subscription-success', 'subscription-cancel'].includes(activeTab);
+  const isFullPageRoute = ['subscription-success', 'subscription-cancel', 'terms', 'privacy', 'gdpr'].includes(activeTab);
 
-  // Handle URL-based routing for success/cancel pages
+  // Handle URL-based routing for special pages
   if (typeof window !== 'undefined') {
     const path = window.location.pathname;
     if (path === '/subscription/success' && activeTab !== 'subscription-success') {
       setActiveTab('subscription-success');
     } else if (path === '/subscription/cancel' && activeTab !== 'subscription-cancel') {
       setActiveTab('subscription-cancel');
+    } else if (path === '/terms' && activeTab !== 'terms') {
+      setActiveTab('terms');
+    } else if (path === '/privacy' && activeTab !== 'privacy') {
+      setActiveTab('privacy');
+    } else if (path === '/gdpr' && activeTab !== 'gdpr') {
+      setActiveTab('gdpr');
     }
   }
 
@@ -130,7 +150,7 @@ function AppContent({ activeTab, setActiveTab, user }: {
       {({ language }) => {
         const pageTitle = pageTitles[language][activeTab as keyof typeof pageTitles.pt] || activeTab;
         
-        // Full page routes (success/cancel) don't need sidebar/header
+        // Full page routes don't need sidebar/header
         if (isFullPageRoute) {
           return <PageComponent />;
         }

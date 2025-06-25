@@ -22,9 +22,9 @@ const footerLinks = {
     { name: 'Contato', href: '#' }
   ],
   legal: [
-    { name: 'Privacidade', href: '#' },
-    { name: 'Termos', href: '#' },
-    { name: 'Cookies', href: '#' },
+    { name: 'Privacidade', href: '/privacy' },
+    { name: 'Termos', href: '/terms' },
+    { name: 'GDPR', href: '/gdpr' },
     { name: 'Licenças', href: '#' }
   ]
 };
@@ -159,7 +159,10 @@ export function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-gray-400 text-sm">
-              © 2024 Gestfin. Todos os direitos reservados.
+              © 2024 Gestfin. Todos os direitos reservados. | 
+              <a href="/privacy" className="hover:text-white ml-1">Política de Privacidade</a> | 
+              <a href="/terms" className="hover:text-white ml-1">Termos de Serviço</a> | 
+              <a href="/gdpr" className="hover:text-white ml-1">GDPR</a>
             </div>
             
             <div className="flex space-x-6">

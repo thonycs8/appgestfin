@@ -1,14 +1,27 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
 import { Transaction, Category, Payable, Investment } from '@/types';
-import { mockTransactions, mockCategories, mockPayables, mockInvestments } from '@/lib/data';
+import { 
+  getTransactions, 
+  getCategories, 
+  getPayables,
+  createTransaction as dbCreateTransaction,
+  createCategory as dbCreateCategory,
+  createPayable as dbCreatePayable,
+  updateTransaction as dbUpdateTransaction,
+  deleteTransaction as dbDeleteTransaction,
+  DatabaseError,
+  ValidationError,
+  RateLimitError
+} from '@/lib/database';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface AppContextType {
   // Language & Theme
   language: Language;
   setLanguage: (lang: Language) => void;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
   t: (key: TranslationKey) => string;
   
   // Data
@@ -17,137 +30,260 @@ interface AppContextType {
   payables: Payable[];
   investments: Investment[];
   
+  // Loading states
+  loading: {
+    transactions: boolean;
+    categories: boolean;
+    payables: boolean;
+  };
+  
   // CRUD Operations
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
-  updateTransaction: (id: string, transaction: Partial<Transaction>) => void;
-  deleteTransaction: (id: string) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+  updateTransaction: (id: string, transaction: Partial<Transaction>) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
   
-  addCategory: (category: Omit<Category, 'id'>) => void;
-  updateCategory: (id: string, category: Partial<Category>) => void;
-  deleteCategory: (id: string) => void;
+  addCategory: (category: Omit<Category, 'id' | 'createdAt'>) => Promise<void>;
+  updateCategory: (id: string, category: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   
-  addPayable: (payable: Omit<Payable, 'id'>) => void;
-  updatePayable: (id: string, payable: Partial<Payable>) => void;
-  deletePayable: (id: string) => void;
+  addPayable: (payable: Omit<Payable, 'id'>) => Promise<void>;
+  updatePayable: (id: string, payable: Partial<Payable>) => Promise<void>;
+  deletePayable: (id: string) => Promise<void>;
   
-  addInvestment: (investment: Omit<Investment, 'id'>) => void;
-  updateInvestment: (id: string, investment: Partial<Investment>) => void;
-  deleteInvestment: (id: string) => void;
+  addInvestment: (investment: Omit<Investment, 'id'>) => Promise<void>;
+  updateInvestment: (id: string, investment: Partial<Investment>) => Promise<void>;
+  deleteInvestment: (id: string) => Promise<void>;
+  
+  // Error handling
+  error: string | null;
+  clearError: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode | ((context: { language: Language }) => ReactNode) }) {
   const [language, setLanguage] = useState<Language>('pt');
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const { getToken, isSignedIn } = useAuth();
+  const { user } = useUser();
   
   // Data states
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
-  const [categories, setCategories] = useState<Category[]>(mockCategories.map(cat => ({
-    ...cat,
-    isActive: true,
-    createdAt: new Date().toISOString()
-  })));
-  const [payables, setPayables] = useState<Payable[]>(mockPayables);
-  const [investments, setInvestments] = useState<Investment[]>(mockInvestments);
-
-  // Apply theme
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
-    }
-  }, [theme]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [payables, setPayables] = useState<Payable[]>([]);
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  
+  // Loading states
+  const [loading, setLoading] = useState({
+    transactions: false,
+    categories: false,
+    payables: false
+  });
+  
+  // Error state
+  const [error, setError] = useState<string | null>(null);
 
   const t = (key: TranslationKey): string => {
     return translations[language][key] || key;
   };
 
-  // Transaction CRUD
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: Date.now().toString()
+  const clearError = () => setError(null);
+
+  const handleError = (error: unknown, operation: string) => {
+    console.error(`Error in ${operation}:`, error);
+    
+    let message = `Erro em ${operation}`;
+    
+    if (error instanceof ValidationError) {
+      message = `Dados inválidos: ${error.message}`;
+    } else if (error instanceof RateLimitError) {
+      message = 'Muitas requisições. Tente novamente em alguns minutos.';
+    } else if (error instanceof DatabaseError) {
+      message = `Erro no banco de dados: ${error.message}`;
+    } else if (error instanceof Error) {
+      message = error.message;
+    }
+    
+    setError(message);
+    toast.error(message);
+  };
+
+  // Initialize Supabase auth
+  useEffect(() => {
+    const initializeAuth = async () => {
+      if (!isSignedIn || !user) return;
+      
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (token) {
+          supabase.auth.setSession({
+            access_token: token,
+            refresh_token: '',
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing Supabase auth:', error);
+      }
     };
-    setTransactions(prev => [newTransaction, ...prev]);
+
+    initializeAuth();
+  }, [isSignedIn, user, getToken]);
+
+  // Load data
+  useEffect(() => {
+    const loadData = async () => {
+      if (!isSignedIn || !user) return;
+
+      try {
+        // Load transactions
+        setLoading(prev => ({ ...prev, transactions: true }));
+        const transactionsData = await getTransactions(user.id);
+        setTransactions(transactionsData);
+        
+        // Load categories
+        setLoading(prev => ({ ...prev, categories: true }));
+        const categoriesData = await getCategories(user.id);
+        setCategories(categoriesData);
+        
+        // Load payables
+        setLoading(prev => ({ ...prev, payables: true }));
+        const payablesData = await getPayables(user.id);
+        setPayables(payablesData);
+        
+      } catch (error) {
+        handleError(error, 'carregamento de dados');
+      } finally {
+        setLoading({
+          transactions: false,
+          categories: false,
+          payables: false
+        });
+      }
+    };
+
+    loadData();
+  }, [isSignedIn, user]);
+
+  // Transaction CRUD
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      const newTransaction = await dbCreateTransaction(transaction, user.id);
+      setTransactions(prev => [newTransaction, ...prev]);
+      toast.success('Transação criada com sucesso!');
+    } catch (error) {
+      handleError(error, 'criação de transação');
+      throw error;
+    }
   };
 
-  const updateTransaction = (id: string, transaction: Partial<Transaction>) => {
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...transaction } : t));
+  const updateTransaction = async (id: string, transaction: Partial<Transaction>) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      const updatedTransaction = await dbUpdateTransaction(id, transaction, user.id);
+      setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
+      toast.success('Transação atualizada com sucesso!');
+    } catch (error) {
+      handleError(error, 'atualização de transação');
+      throw error;
+    }
   };
 
-  const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+  const deleteTransaction = async (id: string) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      await dbDeleteTransaction(id, user.id);
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      toast.success('Transação excluída com sucesso!');
+    } catch (error) {
+      handleError(error, 'exclusão de transação');
+      throw error;
+    }
   };
 
   // Category CRUD
-  const addCategory = (category: Omit<Category, 'id'>) => {
-    const newCategory: Category = {
-      ...category,
-      id: Date.now().toString(),
-      isActive: true,
-      createdAt: new Date().toISOString()
-    };
-    setCategories(prev => [newCategory, ...prev]);
+  const addCategory = async (category: Omit<Category, 'id' | 'createdAt'>) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      const newCategory = await dbCreateCategory(category, user.id);
+      setCategories(prev => [newCategory, ...prev]);
+      toast.success('Categoria criada com sucesso!');
+    } catch (error) {
+      handleError(error, 'criação de categoria');
+      throw error;
+    }
   };
 
-  const updateCategory = (id: string, category: Partial<Category>) => {
+  const updateCategory = async (id: string, category: Partial<Category>) => {
+    // Mock implementation for now
     setCategories(prev => prev.map(c => c.id === id ? { ...c, ...category } : c));
+    toast.success('Categoria atualizada com sucesso!');
   };
 
-  const deleteCategory = (id: string) => {
+  const deleteCategory = async (id: string) => {
+    // Mock implementation for now
     setCategories(prev => prev.filter(c => c.id !== id));
+    toast.success('Categoria excluída com sucesso!');
   };
 
   // Payable CRUD
-  const addPayable = (payable: Omit<Payable, 'id'>) => {
-    const newPayable: Payable = {
-      ...payable,
-      id: Date.now().toString()
-    };
-    setPayables(prev => [newPayable, ...prev]);
+  const addPayable = async (payable: Omit<Payable, 'id'>) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      const newPayable = await dbCreatePayable(payable, user.id);
+      setPayables(prev => [newPayable, ...prev]);
+      toast.success('Conta a pagar criada com sucesso!');
+    } catch (error) {
+      handleError(error, 'criação de conta a pagar');
+      throw error;
+    }
   };
 
-  const updatePayable = (id: string, payable: Partial<Payable>) => {
+  const updatePayable = async (id: string, payable: Partial<Payable>) => {
+    // Mock implementation for now
     setPayables(prev => prev.map(p => p.id === id ? { ...p, ...payable } : p));
+    toast.success('Conta a pagar atualizada com sucesso!');
   };
 
-  const deletePayable = (id: string) => {
+  const deletePayable = async (id: string) => {
+    // Mock implementation for now
     setPayables(prev => prev.filter(p => p.id !== id));
+    toast.success('Conta a pagar excluída com sucesso!');
   };
 
-  // Investment CRUD
-  const addInvestment = (investment: Omit<Investment, 'id'>) => {
+  // Investment CRUD (mock for now)
+  const addInvestment = async (investment: Omit<Investment, 'id'>) => {
     const newInvestment: Investment = {
       ...investment,
       id: Date.now().toString()
     };
     setInvestments(prev => [newInvestment, ...prev]);
+    toast.success('Investimento criado com sucesso!');
   };
 
-  const updateInvestment = (id: string, investment: Partial<Investment>) => {
+  const updateInvestment = async (id: string, investment: Partial<Investment>) => {
     setInvestments(prev => prev.map(i => i.id === id ? { ...i, ...investment } : i));
+    toast.success('Investimento atualizado com sucesso!');
   };
 
-  const deleteInvestment = (id: string) => {
+  const deleteInvestment = async (id: string) => {
     setInvestments(prev => prev.filter(i => i.id !== id));
+    toast.success('Investimento excluído com sucesso!');
   };
 
   const contextValue = {
     language,
     setLanguage,
-    theme,
-    setTheme,
     t,
     transactions,
     categories,
     payables,
     investments,
+    loading,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -159,7 +295,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     deletePayable,
     addInvestment,
     updateInvestment,
-    deleteInvestment
+    deleteInvestment,
+    error,
+    clearError
   };
 
   return (
