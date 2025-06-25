@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
+import React from 'react';
 
 // Sentry configuration
 export const initSentry = () => {
@@ -22,16 +22,7 @@ export const initSentry = () => {
     dsn,
     environment: import.meta.env.MODE,
     integrations: [
-      new BrowserTracing({
-        // Set sampling rate for performance monitoring
-        routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-          React.useEffect,
-          useLocation,
-          useNavigationType,
-          createRoutesFromChildren,
-          matchRoutes
-        ),
-      }),
+      Sentry.browserTracingIntegration(),
     ],
     
     // Performance monitoring
