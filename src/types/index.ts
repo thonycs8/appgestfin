@@ -1,7 +1,7 @@
 export interface Transaction {
   id: string;
   type: 'income' | 'expense';
-  category: 'empresa' | 'familia';
+  category: string; // Changed from 'empresa' | 'familia' to string
   subcategory: string;
   amount: number;
   description: string;
@@ -15,7 +15,7 @@ export interface Account {
   name: string;
   balance: number;
   type: 'checking' | 'savings' | 'investment' | 'credit';
-  category: 'empresa' | 'familia';
+  category: string; // Changed from 'empresa' | 'familia' to string
   userId?: string;
 }
 
@@ -24,7 +24,7 @@ export interface Payable {
   description: string;
   amount: number;
   dueDate: string;
-  category: 'empresa' | 'familia';
+  category: string; // Changed from 'empresa' | 'familia' to string
   status: 'pending' | 'paid' | 'overdue';
   supplier?: string;
   userId?: string;
@@ -36,7 +36,7 @@ export interface Investment {
   type: 'stock' | 'fund' | 'crypto' | 'real_estate' | 'savings';
   amount: number;
   currentValue: number;
-  category: 'empresa' | 'familia';
+  category: string; // Changed from 'empresa' | 'familia' to string
   purchaseDate: string;
   userId?: string;
 }
@@ -45,7 +45,16 @@ export interface Category {
   id: string;
   name: string;
   type: 'income' | 'expense';
-  category: 'empresa' | 'familia';
+  color: string;
+  userId?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
   color: string;
   userId?: string;
   isActive: boolean;
@@ -77,7 +86,7 @@ export interface FinancialGoal {
   description: string;
   targetAmount: number;
   currentAmount: number;
-  category: 'empresa' | 'familia';
+  category: string; // Changed from 'empresa' | 'familia' to string
   deadline: string;
   status: 'active' | 'completed' | 'paused';
   userId?: string;
@@ -86,7 +95,7 @@ export interface FinancialGoal {
 export interface Budget {
   id: string;
   name: string;
-  category: 'empresa' | 'familia';
+  category: string; // Changed from 'empresa' | 'familia' to string
   subcategory: string;
   budgetAmount: number;
   spentAmount: number;

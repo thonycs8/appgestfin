@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
-import { Transaction, Category, Payable, Investment } from '@/types';
+import { Transaction, Category, Payable, Investment, Group } from '@/types';
 import { 
   getTransactions, 
   getCategories, 
@@ -35,12 +35,14 @@ interface AppContextType {
   categories: Category[];
   payables: Payable[];
   investments: Investment[];
+  groups: Group[];
   
   // Loading states
   loading: {
     transactions: boolean;
     categories: boolean;
     payables: boolean;
+    groups: boolean;
   };
   
   // CRUD Operations
@@ -51,6 +53,10 @@ interface AppContextType {
   addCategory: (category: Omit<Category, 'id' | 'createdAt'>) => Promise<void>;
   updateCategory: (id: string, category: Partial<Category>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  
+  addGroup: (group: Omit<Group, 'id' | 'createdAt'>) => Promise<void>;
+  updateGroup: (id: string, group: Partial<Group>) => Promise<void>;
+  deleteGroup: (id: string) => Promise<void>;
   
   addPayable: (payable: Omit<Payable, 'id'>) => Promise<void>;
   updatePayable: (id: string, payable: Partial<Payable>) => Promise<void>;
@@ -77,12 +83,14 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   const [categories, setCategories] = useState<Category[]>([]);
   const [payables, setPayables] = useState<Payable[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   
   // Loading states
   const [loading, setLoading] = useState({
     transactions: false,
     categories: false,
-    payables: false
+    payables: false,
+    groups: false
   });
   
   // Error state
@@ -144,6 +152,31 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     initializeAuth();
   }, [isSignedIn, user, getToken]);
 
+  // Initialize default groups
+  useEffect(() => {
+    if (isSignedIn && user && isInitialized && groups.length === 0) {
+      const defaultGroups: Group[] = [
+        {
+          id: 'empresa',
+          name: 'Empresa',
+          description: 'Transações relacionadas à empresa',
+          color: '#3b82f6',
+          isActive: true,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'familia',
+          name: 'Família',
+          description: 'Transações pessoais e familiares',
+          color: '#8b5cf6',
+          isActive: true,
+          createdAt: new Date().toISOString()
+        }
+      ];
+      setGroups(defaultGroups);
+    }
+  }, [isSignedIn, user, isInitialized, groups.length]);
+
   // Load data
   useEffect(() => {
     const loadData = async () => {
@@ -192,7 +225,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         setLoading({
           transactions: false,
           categories: false,
-          payables: false
+          payables: false,
+          groups: false
         });
       }
     };
@@ -292,6 +326,32 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     toast.success('Categoria excluída com sucesso!');
   };
 
+  // Group CRUD
+  const addGroup = async (group: Omit<Group, 'id' | 'createdAt'>) => {
+    const newGroup: Group = {
+      ...group,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    setGroups(prev => [newGroup, ...prev]);
+    toast.success('Grupo criado com sucesso!');
+  };
+
+  const updateGroup = async (id: string, group: Partial<Group>) => {
+    setGroups(prev => prev.map(g => g.id === id ? { ...g, ...group } : g));
+    toast.success('Grupo atualizado com sucesso!');
+  };
+
+  const deleteGroup = async (id: string) => {
+    // Don't allow deleting default groups
+    if (id === 'empresa' || id === 'familia') {
+      toast.error('Não é possível excluir grupos padrão');
+      return;
+    }
+    setGroups(prev => prev.filter(g => g.id !== id));
+    toast.success('Grupo excluído com sucesso!');
+  };
+
   // Payable CRUD
   const addPayable = async (payable: Omit<Payable, 'id'>) => {
     if (!user) throw new Error('User not authenticated');
@@ -380,6 +440,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     categories,
     payables,
     investments,
+    groups,
     loading,
     addTransaction,
     updateTransaction,
@@ -387,6 +448,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     addCategory,
     updateCategory,
     deleteCategory,
+    addGroup,
+    updateGroup,
+    deleteGroup,
     addPayable,
     updatePayable,
     deletePayable,
