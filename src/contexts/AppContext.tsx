@@ -10,7 +10,9 @@ import {
   createCategory as dbCreateCategory,
   createPayable as dbCreatePayable,
   updateTransaction as dbUpdateTransaction,
+  updatePayable as dbUpdatePayable,
   deleteTransaction as dbDeleteTransaction,
+  deletePayable as dbDeletePayable,
   DatabaseError,
   ValidationError,
   RateLimitError
@@ -244,15 +246,29 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   };
 
   const updatePayable = async (id: string, payable: Partial<Payable>) => {
-    // Mock implementation for now
-    setPayables(prev => prev.map(p => p.id === id ? { ...p, ...payable } : p));
-    toast.success('Conta a pagar atualizada com sucesso!');
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      const updatedPayable = await dbUpdatePayable(id, payable, user.id);
+      setPayables(prev => prev.map(p => p.id === id ? updatedPayable : p));
+      toast.success('Conta a pagar atualizada com sucesso!');
+    } catch (error) {
+      handleError(error, 'atualização de conta a pagar');
+      throw error;
+    }
   };
 
   const deletePayable = async (id: string) => {
-    // Mock implementation for now
-    setPayables(prev => prev.filter(p => p.id !== id));
-    toast.success('Conta a pagar excluída com sucesso!');
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      await dbDeletePayable(id, user.id);
+      setPayables(prev => prev.filter(p => p.id !== id));
+      toast.success('Conta a pagar excluída com sucesso!');
+    } catch (error) {
+      handleError(error, 'exclusão de conta a pagar');
+      throw error;
+    }
   };
 
   // Investment CRUD (mock for now)

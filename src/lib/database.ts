@@ -260,7 +260,8 @@ export async function createPayable(
     ...payable,
     description: sanitizeInput(payable.description),
     supplier: payable.supplier ? sanitizeInput(payable.supplier) : null,
-    user_id: userId
+    user_id: userId,
+    due_date: payable.dueDate
   };
 
   try {
@@ -297,5 +298,67 @@ export async function getPayables(userId: string): Promise<Payable[]> {
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error fetching payables');
+  }
+}
+
+export async function updatePayable(
+  id: string,
+  updates: Partial<Payable>,
+  userId: string
+): Promise<Payable> {
+  if (!checkRateLimit(`payables:${userId}`, RATE_LIMITS.PAYABLES_PER_MINUTE)) {
+    throw new RateLimitError('Too many payable requests. Please try again later.');
+  }
+
+  // Validation
+  if (updates.amount && !validateAmount(updates.amount)) {
+    throw new ValidationError('Invalid amount');
+  }
+
+  if (updates.dueDate && !validateDate(updates.dueDate)) {
+    throw new ValidationError('Invalid due date');
+  }
+
+  const sanitizedUpdates = {
+    ...updates,
+    ...(updates.description && { description: sanitizeInput(updates.description) }),
+    ...(updates.supplier && { supplier: sanitizeInput(updates.supplier) }),
+    ...(updates.dueDate && { due_date: updates.dueDate })
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('payables')
+      .update(sanitizedUpdates)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new DatabaseError(`Failed to update payable: ${error.message}`, error.code);
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof DatabaseError) throw error;
+    throw new DatabaseError('Unexpected error updating payable');
+  }
+}
+
+export async function deletePayable(id: string, userId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('payables')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new DatabaseError(`Failed to delete payable: ${error.message}`, error.code);
+    }
+  } catch (error) {
+    if (error instanceof DatabaseError) throw error;
+    throw new DatabaseError('Unexpected error deleting payable');
   }
 }
