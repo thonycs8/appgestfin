@@ -124,9 +124,9 @@ export function Income() {
   };
 
   const handleCreateIncome = () => {
-    // Validação básica
-    if (!newIncome.group || !newIncome.category || !newIncome.amount || !newIncome.description) {
-      alert(language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios.' : 'Please fill in all required fields.');
+    // Validação básica - categoria agora é opcional
+    if (!newIncome.amount || !newIncome.description) {
+      alert(language === 'pt' ? 'Por favor, preencha os campos obrigatórios (valor e descrição).' : 'Please fill in the required fields (amount and description).');
       return;
     }
 
@@ -139,8 +139,8 @@ export function Income() {
     try {
       addTransaction({
         type: 'income',
-        category: newIncome.group,
-        subcategory: newIncome.category,
+        category: newIncome.group || 'geral',
+        subcategory: newIncome.category || 'Sem categoria',
         amount: amount,
         description: newIncome.description.trim(),
         date: newIncome.date,
@@ -163,7 +163,7 @@ export function Income() {
     setEditingTransaction(transaction);
     setNewIncome({
       group: transaction.category,
-      category: transaction.subcategory,
+      category: transaction.subcategory === 'Sem categoria' ? '' : transaction.subcategory,
       amount: transaction.amount.toString(),
       description: transaction.description,
       date: transaction.date
@@ -172,8 +172,8 @@ export function Income() {
   };
 
   const handleUpdateTransaction = () => {
-    if (!editingTransaction || !newIncome.group || !newIncome.category || !newIncome.amount || !newIncome.description) {
-      alert(language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios.' : 'Please fill in all required fields.');
+    if (!editingTransaction || !newIncome.amount || !newIncome.description) {
+      alert(language === 'pt' ? 'Por favor, preencha os campos obrigatórios (valor e descrição).' : 'Please fill in the required fields (amount and description).');
       return;
     }
 
@@ -185,8 +185,8 @@ export function Income() {
 
     try {
       updateTransaction(editingTransaction.id, {
-        category: newIncome.group,
-        subcategory: newIncome.category,
+        category: newIncome.group || 'geral',
+        subcategory: newIncome.category || 'Sem categoria',
         amount: amount,
         description: newIncome.description.trim(),
         date: newIncome.date
@@ -288,14 +288,43 @@ export function Income() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="group" className="text-sm font-medium text-gray-700">Grupo</Label>
+                  <Label htmlFor="amount" className="text-sm font-medium text-gray-700">
+                    {t('amount')} <span className="text-red-500">*</span>
+                  </Label>
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    value={newIncome.amount}
+                    onChange={(e) => setNewIncome(prev => ({...prev, amount: e.target.value}))}
+                    className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                    {t('description')} <span className="text-red-500">*</span>
+                  </Label>
+                  <Input 
+                    placeholder={t('incomeDescription')}
+                    value={newIncome.description}
+                    onChange={(e) => setNewIncome(prev => ({...prev, description: e.target.value}))}
+                    className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="group" className="text-sm font-medium text-gray-700">
+                    Grupo <span className="text-gray-400">(opcional)</span>
+                  </Label>
                   <div className="flex gap-2">
                     <Select 
                       value={newIncome.group} 
                       onValueChange={(value) => setNewIncome(prev => ({...prev, group: value}))}
                     >
                       <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
-                        <SelectValue placeholder={language === 'pt' ? 'Selecione o grupo' : 'Select group'} />
+                        <SelectValue placeholder={language === 'pt' ? 'Selecione o grupo (opcional)' : 'Select group (optional)'} />
                       </SelectTrigger>
                       <SelectContent className="bg-white border border-gray-200">
                         {groups.filter(g => g.isActive).map((group) => (
@@ -354,14 +383,16 @@ export function Income() {
                 </div>
                 
                 <div>
-                  <Label htmlFor="category" className="text-sm font-medium text-gray-700">{t('category')}</Label>
+                  <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                    {t('category')} <span className="text-gray-400">(opcional)</span>
+                  </Label>
                   <div className="flex gap-2">
                     <Select 
                       value={newIncome.category} 
                       onValueChange={(value) => setNewIncome(prev => ({...prev, category: value}))}
                     >
                       <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
-                        <SelectValue placeholder={language === 'pt' ? 'Selecione a categoria' : 'Select category'} />
+                        <SelectValue placeholder={language === 'pt' ? 'Selecione a categoria (opcional)' : 'Select category (optional)'} />
                       </SelectTrigger>
                       <SelectContent className="bg-white border border-gray-200">
                         {activeIncomeCategories.map((category) => (
@@ -409,29 +440,6 @@ export function Income() {
                       </DialogContent>
                     </Dialog>
                   </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="amount" className="text-sm font-medium text-gray-700">{t('amount')}</Label>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
-                    value={newIncome.amount}
-                    onChange={(e) => setNewIncome(prev => ({...prev, amount: e.target.value}))}
-                    className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description" className="text-sm font-medium text-gray-700">{t('description')}</Label>
-                  <Input 
-                    placeholder={t('incomeDescription')}
-                    value={newIncome.description}
-                    onChange={(e) => setNewIncome(prev => ({...prev, description: e.target.value}))}
-                    className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-                  />
                 </div>
                 
                 <div>
@@ -489,7 +497,12 @@ export function Income() {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">{transaction.description}</p>
-                        <p className="text-sm text-gray-600">{transaction.subcategory}</p>
+                        <p className="text-sm text-gray-600">
+                          {transaction.subcategory === 'Sem categoria' ? 
+                            <span className="italic text-gray-400">Sem categoria</span> : 
+                            transaction.subcategory
+                          }
+                        </p>
                         <p className="text-xs text-gray-500">
                           {formatDate(transaction.date, language === 'pt' ? 'pt-PT' : 'en-GB')}
                         </p>
@@ -504,7 +517,7 @@ export function Income() {
                           borderColor: group?.color || '#3b82f6', 
                           color: group?.color || '#3b82f6' 
                         }}>
-                          {group?.name || transaction.category}
+                          {group?.name || 'Geral'}
                         </Badge>
                       </div>
                       <div className="flex gap-2">
