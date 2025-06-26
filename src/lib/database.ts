@@ -5,19 +5,41 @@ import { DatabaseError, ValidationError, RateLimitError } from '@/lib/errorHandl
 // Helper function to ensure user exists in database
 async function ensureUserExists(userId: string, userEmail?: string) {
   try {
+    console.log('🔧 Ensuring user exists:', userId);
+    
     // Call the database function to ensure user exists
     const { error } = await supabase.rpc('ensure_user_exists', {
       user_id: userId,
-      user_email: userEmail || `${userId}@unknown.com`
+      user_email: userEmail || `${userId}@clerk.local`
     });
 
     if (error) {
-      console.warn('Warning creating user record:', error);
+      console.warn('⚠️ Warning creating user record:', error);
       // Don't throw error, just log warning
+    } else {
+      console.log('✅ User record ensured for:', userId);
     }
   } catch (error) {
-    console.warn('Error ensuring user exists:', error);
+    console.warn('⚠️ Error ensuring user exists:', error);
     // Don't throw error, just log warning - the RLS policies should handle this
+  }
+}
+
+// Helper function to verify authentication before operations
+async function verifyAuth(userId: string) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authData.user) {
+      console.error('❌ Auth verification failed:', authError);
+      throw new Error('Authentication required');
+    }
+    
+    console.log('✅ Auth verified for operation, user:', authData.user.id);
+    return authData.user;
+  } catch (error) {
+    console.error('❌ Auth verification error:', error);
+    throw new Error('Authentication required');
   }
 }
 
@@ -28,6 +50,8 @@ export async function createTransaction(
   userEmail?: string
 ): Promise<Transaction> {
   const startTime = Date.now();
+  
+  console.log('📝 Creating transaction for user:', userId);
   
   if (!checkRateLimit(`transactions:${userId}`, RATE_LIMITS.TRANSACTIONS_PER_MINUTE)) {
     throw new RateLimitError('Too many transaction requests. Please try again later.');
@@ -41,6 +65,9 @@ export async function createTransaction(
   if (!validateDate(transaction.date)) {
     throw new ValidationError('Invalid date', 'date', { date: transaction.date });
   }
+
+  // Verify authentication
+  await verifyAuth(userId);
 
   // Ensure user exists
   await ensureUserExists(userId, userEmail);
@@ -57,6 +84,8 @@ export async function createTransaction(
   };
 
   try {
+    console.log('💾 Inserting transaction into database...');
+    
     const { data, error } = await supabase
       .from('transactions')
       .insert([sanitizedTransaction])
@@ -64,7 +93,7 @@ export async function createTransaction(
       .single();
 
     if (error) {
-      console.error('Database error creating transaction:', error);
+      console.error('❌ Database error creating transaction:', error);
       throw new DatabaseError(`Failed to create transaction: ${error.message}`, error.code, {
         operation: 'create_transaction',
         table: 'transactions',
@@ -74,6 +103,8 @@ export async function createTransaction(
         hint: error.hint
       });
     }
+    
+    console.log('✅ Transaction created successfully:', data.id);
     
     return {
       id: data.id,
@@ -97,6 +128,11 @@ export async function createTransaction(
 export async function getTransactions(userId: string): Promise<Transaction[]> {
   const startTime = Date.now();
   
+  console.log('📊 Fetching transactions for user:', userId);
+  
+  // Verify authentication
+  await verifyAuth(userId);
+  
   try {
     const { data, error } = await supabase
       .from('transactions')
@@ -105,6 +141,7 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('❌ Database error fetching transactions:', error);
       throw new DatabaseError(`Failed to fetch transactions: ${error.message}`, error.code, {
         operation: 'get_transactions',
         table: 'transactions',
@@ -112,6 +149,8 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
         duration: Date.now() - startTime,
       });
     }
+    
+    console.log('✅ Fetched transactions successfully:', data?.length || 0);
     
     return (data || []).map(item => ({
       id: item.id,
@@ -139,6 +178,8 @@ export async function updateTransaction(
 ): Promise<Transaction> {
   const startTime = Date.now();
   
+  console.log('✏️ Updating transaction:', id, 'for user:', userId);
+  
   if (!checkRateLimit(`transactions:${userId}`, RATE_LIMITS.TRANSACTIONS_PER_MINUTE)) {
     throw new RateLimitError('Too many transaction requests. Please try again later.');
   }
@@ -151,6 +192,9 @@ export async function updateTransaction(
   if (updates.date && !validateDate(updates.date)) {
     throw new ValidationError('Invalid date', 'date', { date: updates.date });
   }
+
+  // Verify authentication
+  await verifyAuth(userId);
 
   const sanitizedUpdates: any = {};
   
@@ -172,6 +216,7 @@ export async function updateTransaction(
       .single();
 
     if (error) {
+      console.error('❌ Database error updating transaction:', error);
       throw new DatabaseError(`Failed to update transaction: ${error.message}`, error.code, {
         operation: 'update_transaction',
         table: 'transactions',
@@ -180,6 +225,8 @@ export async function updateTransaction(
         duration: Date.now() - startTime,
       });
     }
+    
+    console.log('✅ Transaction updated successfully:', id);
     
     return {
       id: data.id,
@@ -203,6 +250,11 @@ export async function updateTransaction(
 export async function deleteTransaction(id: string, userId: string): Promise<void> {
   const startTime = Date.now();
   
+  console.log('🗑️ Deleting transaction:', id, 'for user:', userId);
+  
+  // Verify authentication
+  await verifyAuth(userId);
+  
   try {
     const { error } = await supabase
       .from('transactions')
@@ -211,6 +263,7 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
       .eq('user_id', userId);
 
     if (error) {
+      console.error('❌ Database error deleting transaction:', error);
       throw new DatabaseError(`Failed to delete transaction: ${error.message}`, error.code, {
         operation: 'delete_transaction',
         table: 'transactions',
@@ -219,6 +272,8 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
         duration: Date.now() - startTime,
       });
     }
+    
+    console.log('✅ Transaction deleted successfully:', id);
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error deleting transaction', undefined, {
@@ -228,7 +283,7 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
   }
 }
 
-// Categories - Simplified without RLS dependency
+// Categories
 export async function createCategory(
   category: Omit<Category, 'id' | 'createdAt'>,
   userId: string,
@@ -236,9 +291,14 @@ export async function createCategory(
 ): Promise<Category> {
   const startTime = Date.now();
   
+  console.log('📝 Creating category for user:', userId);
+  
   if (!checkRateLimit(`categories:${userId}`, RATE_LIMITS.CATEGORIES_PER_MINUTE)) {
     throw new RateLimitError('Too many category requests. Please try again later.');
   }
+
+  // Verify authentication
+  await verifyAuth(userId);
 
   // Ensure user exists
   await ensureUserExists(userId, userEmail);
@@ -252,6 +312,8 @@ export async function createCategory(
   };
 
   try {
+    console.log('💾 Inserting category into database...');
+    
     // Use upsert to avoid conflicts
     const { data, error } = await supabase
       .from('categories')
@@ -263,7 +325,7 @@ export async function createCategory(
       .single();
 
     if (error) {
-      console.error('Database error creating category:', error);
+      console.error('❌ Database error creating category:', error);
       throw new DatabaseError(`Failed to create category: ${error.message}`, error.code, {
         operation: 'create_category',
         table: 'categories',
@@ -273,6 +335,8 @@ export async function createCategory(
         hint: error.hint
       });
     }
+    
+    console.log('✅ Category created successfully:', data.id);
     
     return {
       id: data.id,
@@ -294,6 +358,11 @@ export async function createCategory(
 export async function getCategories(userId: string): Promise<Category[]> {
   const startTime = Date.now();
   
+  console.log('📊 Fetching categories for user:', userId);
+  
+  // Verify authentication
+  await verifyAuth(userId);
+  
   try {
     const { data, error } = await supabase
       .from('categories')
@@ -302,6 +371,7 @@ export async function getCategories(userId: string): Promise<Category[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('❌ Database error fetching categories:', error);
       throw new DatabaseError(`Failed to fetch categories: ${error.message}`, error.code, {
         operation: 'get_categories',
         table: 'categories',
@@ -309,6 +379,8 @@ export async function getCategories(userId: string): Promise<Category[]> {
         duration: Date.now() - startTime,
       });
     }
+    
+    console.log('✅ Fetched categories successfully:', data?.length || 0);
     
     return (data || []).map(item => ({
       id: item.id,
@@ -335,6 +407,8 @@ export async function createPayable(
 ): Promise<Payable> {
   const startTime = Date.now();
   
+  console.log('📝 Creating payable for user:', userId);
+  
   if (!checkRateLimit(`payables:${userId}`, RATE_LIMITS.PAYABLES_PER_MINUTE)) {
     throw new RateLimitError('Too many payable requests. Please try again later.');
   }
@@ -346,6 +420,9 @@ export async function createPayable(
   if (!validateDate(payable.dueDate)) {
     throw new ValidationError('Invalid due date', 'dueDate', { dueDate: payable.dueDate });
   }
+
+  // Verify authentication
+  await verifyAuth(userId);
 
   // Ensure user exists
   await ensureUserExists(userId, userEmail);
@@ -361,6 +438,8 @@ export async function createPayable(
   };
 
   try {
+    console.log('💾 Inserting payable into database...');
+    
     const { data, error } = await supabase
       .from('payables')
       .insert([sanitizedPayable])
@@ -368,7 +447,7 @@ export async function createPayable(
       .single();
 
     if (error) {
-      console.error('Database error creating payable:', error);
+      console.error('❌ Database error creating payable:', error);
       throw new DatabaseError(`Failed to create payable: ${error.message}`, error.code, {
         operation: 'create_payable',
         table: 'payables',
@@ -378,6 +457,8 @@ export async function createPayable(
         hint: error.hint
       });
     }
+    
+    console.log('✅ Payable created successfully:', data.id);
     
     return {
       id: data.id,
@@ -400,6 +481,11 @@ export async function createPayable(
 export async function getPayables(userId: string): Promise<Payable[]> {
   const startTime = Date.now();
   
+  console.log('📊 Fetching payables for user:', userId);
+  
+  // Verify authentication
+  await verifyAuth(userId);
+  
   try {
     const { data, error } = await supabase
       .from('payables')
@@ -408,6 +494,7 @@ export async function getPayables(userId: string): Promise<Payable[]> {
       .order('due_date', { ascending: true });
 
     if (error) {
+      console.error('❌ Database error fetching payables:', error);
       throw new DatabaseError(`Failed to fetch payables: ${error.message}`, error.code, {
         operation: 'get_payables',
         table: 'payables',
@@ -415,6 +502,8 @@ export async function getPayables(userId: string): Promise<Payable[]> {
         duration: Date.now() - startTime,
       });
     }
+    
+    console.log('✅ Fetched payables successfully:', data?.length || 0);
     
     return (data || []).map(item => ({
       id: item.id,
@@ -441,6 +530,8 @@ export async function updatePayable(
 ): Promise<Payable> {
   const startTime = Date.now();
   
+  console.log('✏️ Updating payable:', id, 'for user:', userId);
+  
   if (!checkRateLimit(`payables:${userId}`, RATE_LIMITS.PAYABLES_PER_MINUTE)) {
     throw new RateLimitError('Too many payable requests. Please try again later.');
   }
@@ -453,6 +544,9 @@ export async function updatePayable(
   if (updates.dueDate && !validateDate(updates.dueDate)) {
     throw new ValidationError('Invalid due date', 'dueDate', { dueDate: updates.dueDate });
   }
+
+  // Verify authentication
+  await verifyAuth(userId);
 
   const sanitizedUpdates: any = {};
   
@@ -473,6 +567,7 @@ export async function updatePayable(
       .single();
 
     if (error) {
+      console.error('❌ Database error updating payable:', error);
       throw new DatabaseError(`Failed to update payable: ${error.message}`, error.code, {
         operation: 'update_payable',
         table: 'payables',
@@ -481,6 +576,8 @@ export async function updatePayable(
         duration: Date.now() - startTime,
       });
     }
+    
+    console.log('✅ Payable updated successfully:', id);
     
     return {
       id: data.id,
@@ -503,6 +600,11 @@ export async function updatePayable(
 export async function deletePayable(id: string, userId: string): Promise<void> {
   const startTime = Date.now();
   
+  console.log('🗑️ Deleting payable:', id, 'for user:', userId);
+  
+  // Verify authentication
+  await verifyAuth(userId);
+  
   try {
     const { error } = await supabase
       .from('payables')
@@ -511,6 +613,7 @@ export async function deletePayable(id: string, userId: string): Promise<void> {
       .eq('user_id', userId);
 
     if (error) {
+      console.error('❌ Database error deleting payable:', error);
       throw new DatabaseError(`Failed to delete payable: ${error.message}`, error.code, {
         operation: 'delete_payable',
         table: 'payables',
@@ -519,6 +622,8 @@ export async function deletePayable(id: string, userId: string): Promise<void> {
         duration: Date.now() - startTime,
       });
     }
+    
+    console.log('✅ Payable deleted successfully:', id);
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error deleting payable', undefined, {

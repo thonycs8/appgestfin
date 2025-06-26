@@ -140,27 +140,56 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     toast.error(message);
   };
 
-  // Initialize Supabase auth
+  // Initialize Supabase auth with better error handling and debugging
   useEffect(() => {
     const initializeAuth = async () => {
       if (!isSignedIn || !user) {
+        console.log('🔐 User not signed in or user object not available');
         setIsInitialized(false);
         return;
       }
       
       try {
-        console.log('Initializing Supabase auth for user:', user.id);
+        console.log('🔐 Initializing Supabase auth for user:', user.id);
+        
+        // Get the JWT token from Clerk with Supabase template
         const token = await getToken({ template: 'supabase' });
-        if (token) {
-          supabase.auth.setSession({
-            access_token: token,
-            refresh_token: '',
-          });
-          console.log('Supabase auth initialized successfully');
+        
+        if (!token) {
+          console.error('❌ No JWT token received from Clerk');
+          throw new Error('No JWT token available from Clerk');
         }
+        
+        console.log('✅ JWT token received from Clerk (length):', token.length);
+        
+        // Set the session in Supabase
+        const { data, error } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: '', // Clerk handles refresh
+        });
+        
+        if (error) {
+          console.error('❌ Error setting Supabase session:', error);
+          throw error;
+        }
+        
+        console.log('✅ Supabase session set successfully');
+        console.log('🔍 Session user:', data.user?.id);
+        
+        // Verify the session is working by checking auth status
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          console.error('❌ Error verifying Supabase auth:', authError);
+          throw authError;
+        }
+        
+        console.log('✅ Supabase auth verified, user ID:', authData.user?.id);
+        
         setIsInitialized(true);
       } catch (error) {
-        console.error('Error initializing Supabase auth:', error);
+        console.error('❌ Error initializing Supabase auth:', error);
+        setError('Erro na autenticação. Tente fazer login novamente.');
         setIsInitialized(true); // Still set to true to prevent infinite loading
       }
     };
@@ -248,22 +277,35 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   }, [isSignedIn, user, isInitialized, budgets.length]);
 
-  // Load data
+  // Load data with better auth handling
   useEffect(() => {
     const loadData = async () => {
-      if (!isSignedIn || !user || !isInitialized) return;
+      if (!isSignedIn || !user || !isInitialized) {
+        console.log('🔄 Skipping data load - not ready:', { isSignedIn, user: !!user, isInitialized });
+        return;
+      }
 
-      console.log('Loading data for user:', user.id);
+      console.log('📊 Loading data for user:', user.id);
 
       try {
+        // Verify auth before loading data
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !authData.user) {
+          console.error('❌ Auth verification failed before data load:', authError);
+          throw new Error('Authentication required');
+        }
+        
+        console.log('✅ Auth verified before data load, user:', authData.user.id);
+
         // Load transactions
         setLoading(prev => ({ ...prev, transactions: true }));
         try {
           const transactionsData = await getTransactions(user.id);
           setTransactions(transactionsData);
-          console.log('Loaded transactions:', transactionsData.length);
+          console.log('✅ Loaded transactions:', transactionsData.length);
         } catch (error) {
-          console.warn('Failed to load transactions:', error);
+          console.warn('⚠️ Failed to load transactions:', error);
           setTransactions([]); // Set empty array on error
         }
         
@@ -272,9 +314,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         try {
           const categoriesData = await getCategories(user.id);
           setCategories(categoriesData);
-          console.log('Loaded categories:', categoriesData.length);
+          console.log('✅ Loaded categories:', categoriesData.length);
         } catch (error) {
-          console.warn('Failed to load categories:', error);
+          console.warn('⚠️ Failed to load categories:', error);
           setCategories([]); // Set empty array on error
         }
         
@@ -283,14 +325,14 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         try {
           const payablesData = await getPayables(user.id);
           setPayables(payablesData);
-          console.log('Loaded payables:', payablesData.length);
+          console.log('✅ Loaded payables:', payablesData.length);
         } catch (error) {
-          console.warn('Failed to load payables:', error);
+          console.warn('⚠️ Failed to load payables:', error);
           setPayables([]); // Set empty array on error
         }
         
       } catch (error) {
-        console.error('Error in loadData:', error);
+        console.error('❌ Error in loadData:', error);
         handleError(error, 'carregamento de dados');
       } finally {
         setLoading({
@@ -307,11 +349,21 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     loadData();
   }, [isSignedIn, user, isInitialized]);
 
-  // Transaction CRUD
+  // Enhanced transaction CRUD with better auth handling
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     if (!user) throw new Error('User not authenticated');
     
     try {
+      // Verify auth before operation
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authData.user) {
+        console.error('❌ Auth verification failed before transaction creation:', authError);
+        throw new Error('Authentication required');
+      }
+      
+      console.log('✅ Auth verified before transaction creation, user:', authData.user.id);
+      
       await withErrorHandling('create_transaction', async () => {
         const newTransaction = await dbCreateTransaction(transaction, user.id, user.emailAddresses[0]?.emailAddress);
         setTransactions(prev => [newTransaction, ...prev]);

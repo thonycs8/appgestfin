@@ -7,7 +7,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+console.log('🔧 Initializing Supabase client with URL:', supabaseUrl);
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: false, // Clerk handles token refresh
+    persistSession: false,   // Don't persist sessions since Clerk manages auth
+    detectSessionInUrl: false // Don't detect sessions from URL
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'gestfin-app'
+    }
+  }
+});
 
 // Rate limiting configuration
 export const RATE_LIMITS = {
