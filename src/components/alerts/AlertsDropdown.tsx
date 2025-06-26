@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { Bell, AlertTriangle, Clock, TrendingUp, DollarSign, CreditCard, CheckCircle, X, Settings } from 'lucide-react';
+import { Bell, AlertTriangle, Clock, TrendingUp, DollarSign, CreditCard, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useApp } from '@/contexts/AppContext';
 import { Alert } from '@/types';
-import { formatCurrency } from '@/lib/i18n';
 
 const alertIcons = {
   payable_due: Clock,
