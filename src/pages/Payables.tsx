@@ -26,7 +26,7 @@ const statusIcons = {
 };
 
 export function Payables() {
-  const { payables, addPayable, updatePayable, deletePayable, t, language } = useApp();
+  const { payables, groups, addPayable, updatePayable, deletePayable, t, language } = useApp();
   
   const [newPayable, setNewPayable] = useState({
     description: '',
@@ -66,7 +66,7 @@ export function Payables() {
   };
 
   const handleCreatePayable = async () => {
-    if (!newPayable.description || !newPayable.amount || !newPayable.dueDate || !newPayable.category) {
+    if (!newPayable.description || !newPayable.amount || !newPayable.dueDate) {
       alert(language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios.' : 'Please fill in all required fields.');
       return;
     }
@@ -82,7 +82,7 @@ export function Payables() {
         description: newPayable.description.trim(),
         amount: amount,
         dueDate: newPayable.dueDate,
-        category: newPayable.category as 'empresa' | 'familia',
+        category: newPayable.category || 'geral',
         status: 'pending',
         supplier: newPayable.supplier.trim() || undefined
       });
@@ -107,7 +107,7 @@ export function Payables() {
   };
 
   const handleUpdatePayable = async () => {
-    if (!editingPayable || !newPayable.description || !newPayable.amount || !newPayable.dueDate || !newPayable.category) {
+    if (!editingPayable || !newPayable.description || !newPayable.amount || !newPayable.dueDate) {
       alert(language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios.' : 'Please fill in all required fields.');
       return;
     }
@@ -123,7 +123,7 @@ export function Payables() {
         description: newPayable.description.trim(),
         amount: amount,
         dueDate: newPayable.dueDate,
-        category: newPayable.category as 'empresa' | 'familia',
+        category: newPayable.category || 'geral',
         supplier: newPayable.supplier.trim() || undefined
       });
 
@@ -160,6 +160,8 @@ export function Payables() {
       resetForm();
     }
   };
+
+  const getGroupById = (id: string) => groups.find(g => g.id === id);
 
   return (
     <div className="space-y-6">
@@ -267,16 +269,25 @@ export function Payables() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="category">{t('category')}</Label>
+                  <Label htmlFor="category">Grupo</Label>
                   <Select value={newPayable.category} onValueChange={(value) => 
                     setNewPayable(prev => ({...prev, category: value}))
                   }>
                     <SelectTrigger>
-                      <SelectValue placeholder={language === 'pt' ? 'Selecione a categoria' : 'Select category'} />
+                      <SelectValue placeholder={language === 'pt' ? 'Selecione o grupo' : 'Select group'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="empresa">{t('company')}</SelectItem>
-                      <SelectItem value="familia">{t('family')}</SelectItem>
+                      {groups.filter(g => g.isActive).map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: group.color }}
+                            />
+                            {group.name}
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -315,16 +326,21 @@ export function Payables() {
               ) : (
                 payables.map((payable) => {
                   const StatusIcon = statusIcons[payable.status];
+                  const group = getGroupById(payable.category);
                   return (
                     <div key={payable.id} className="flex items-center justify-between p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center space-x-4">
-                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                          payable.category === 'empresa' ? 'bg-blue-100' : 'bg-purple-100'
-                        }`}>
-                          {payable.category === 'empresa' ? 
-                            <Building2 className="h-5 w-5 text-blue-600" /> : 
-                            <Home className="h-5 w-5 text-purple-600" />
-                          }
+                        <div 
+                          className="h-10 w-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: group?.color || '#3b82f6' }}
+                        >
+                          {group?.id === 'empresa' ? (
+                            <Building2 className="h-5 w-5 text-white" />
+                          ) : group?.id === 'familia' ? (
+                            <Home className="h-5 w-5 text-white" />
+                          ) : (
+                            <Calendar className="h-5 w-5 text-white" />
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">{payable.description}</p>
@@ -346,10 +362,11 @@ export function Payables() {
                               <StatusIcon className="mr-1 h-3 w-3" />
                               {getStatusText(payable.status)}
                             </Badge>
-                            <Badge variant="outline" className={`${
-                              payable.category === 'empresa' ? 'border-blue-200 text-blue-700' : 'border-purple-200 text-purple-700'
-                            }`}>
-                              {payable.category === 'empresa' ? t('company') : t('family')}
+                            <Badge variant="outline" style={{ 
+                              borderColor: group?.color || '#3b82f6', 
+                              color: group?.color || '#3b82f6' 
+                            }}>
+                              {group?.name || 'Geral'}
                             </Badge>
                           </div>
                         </div>
@@ -418,79 +435,88 @@ export function Payables() {
                   <p>{language === 'pt' ? 'Nenhuma conta vencida' : 'No overdue accounts'}</p>
                 </div>
               ) : (
-                overduePayables.map((payable) => (
-                  <div key={payable.id} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                overduePayables.map((payable) => {
+                  const group = getGroupById(payable.category);
+                  return (
+                    <div key={payable.id} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{payable.description}</p>
+                          {payable.supplier && (
+                            <p className="text-sm text-gray-600">{payable.supplier}</p>
+                          )}
+                          <p className="text-xs text-red-600 font-medium">
+                            {t('overdueOn')} {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{payable.description}</p>
-                        {payable.supplier && (
-                          <p className="text-sm text-gray-600">{payable.supplier}</p>
-                        )}
-                        <p className="text-xs text-red-600 font-medium">
-                          {t('overdueOn')} {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-red-700">
+                            {formatCurrency(payable.amount)}
+                          </p>
+                          <Badge variant="outline" style={{ 
+                            borderColor: group?.color || '#3b82f6', 
+                            color: group?.color || '#3b82f6' 
+                          }}>
+                            {group?.name || 'Geral'}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleMarkAsPaid(payable)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            {t('payNow')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPayable(payable)}
+                            className="h-8 w-8 p-0 hover:bg-gray-100"
+                          >
+                            <Edit className="h-4 w-4 text-gray-600" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  {language === 'pt' ? 'Excluir Conta a Pagar' : 'Delete Payable'}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {language === 'pt' 
+                                    ? 'Tem certeza que deseja excluir esta conta a pagar? Esta ação não pode ser desfeita.'
+                                    : 'Are you sure you want to delete this payable? This action cannot be undone.'
+                                  }
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>
+                                  {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                                </AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeletePayable(payable.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  {language === 'pt' ? 'Excluir' : 'Delete'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-red-700">
-                          {formatCurrency(payable.amount)}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleMarkAsPaid(payable)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          {t('payNow')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditPayable(payable)}
-                          className="h-8 w-8 p-0 hover:bg-gray-100"
-                        >
-                          <Edit className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {language === 'pt' ? 'Excluir Conta a Pagar' : 'Delete Payable'}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {language === 'pt' 
-                                  ? 'Tem certeza que deseja excluir esta conta a pagar? Esta ação não pode ser desfeita.'
-                                  : 'Are you sure you want to delete this payable? This action cannot be undone.'
-                                }
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                {language === 'pt' ? 'Cancelar' : 'Cancel'}
-                              </AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeletePayable(payable.id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                {language === 'pt' ? 'Excluir' : 'Delete'}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </TabsContent>
 
@@ -501,79 +527,88 @@ export function Payables() {
                   <p>{language === 'pt' ? 'Nenhuma conta pendente' : 'No pending accounts'}</p>
                 </div>
               ) : (
-                pendingPayables.map((payable) => (
-                  <div key={payable.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-lg bg-yellow-100 flex items-center justify-center">
-                        <Calendar className="h-5 w-5 text-yellow-600" />
+                pendingPayables.map((payable) => {
+                  const group = getGroupById(payable.category);
+                  return (
+                    <div key={payable.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-10 w-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                          <Calendar className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{payable.description}</p>
+                          {payable.supplier && (
+                            <p className="text-sm text-gray-600">{payable.supplier}</p>
+                          )}
+                          <p className="text-xs text-gray-500">
+                            {t('dueOn')} {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{payable.description}</p>
-                        {payable.supplier && (
-                          <p className="text-sm text-gray-600">{payable.supplier}</p>
-                        )}
-                        <p className="text-xs text-gray-500">
-                          {t('dueOn')} {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-yellow-700">
+                            {formatCurrency(payable.amount)}
+                          </p>
+                          <Badge variant="outline" style={{ 
+                            borderColor: group?.color || '#3b82f6', 
+                            color: group?.color || '#3b82f6' 
+                          }}>
+                            {group?.name || 'Geral'}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => handleMarkAsPaid(payable)}
+                          >
+                            {t('markAsPaid')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPayable(payable)}
+                            className="h-8 w-8 p-0 hover:bg-gray-100"
+                          >
+                            <Edit className="h-4 w-4 text-gray-600" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  {language === 'pt' ? 'Excluir Conta a Pagar' : 'Delete Payable'}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {language === 'pt' 
+                                    ? 'Tem certeza que deseja excluir esta conta a pagar? Esta ação não pode ser desfeita.'
+                                    : 'Are you sure you want to delete this payable? This action cannot be undone.'
+                                  }
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>
+                                  {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                                </AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeletePayable(payable.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  {language === 'pt' ? 'Excluir' : 'Delete'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-yellow-700">
-                          {formatCurrency(payable.amount)}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="secondary"
-                          onClick={() => handleMarkAsPaid(payable)}
-                        >
-                          {t('markAsPaid')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditPayable(payable)}
-                          className="h-8 w-8 p-0 hover:bg-gray-100"
-                        >
-                          <Edit className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {language === 'pt' ? 'Excluir Conta a Pagar' : 'Delete Payable'}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {language === 'pt' 
-                                  ? 'Tem certeza que deseja excluir esta conta a pagar? Esta ação não pode ser desfeita.'
-                                  : 'Are you sure you want to delete this payable? This action cannot be undone.'
-                                }
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                {language === 'pt' ? 'Cancelar' : 'Cancel'}
-                              </AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeletePayable(payable.id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                {language === 'pt' ? 'Excluir' : 'Delete'}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </TabsContent>
 
@@ -584,72 +619,81 @@ export function Payables() {
                   <p>{t('noPaidAccounts')}</p>
                 </div>
               ) : (
-                paidPayables.map((payable) => (
-                  <div key={payable.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                paidPayables.map((payable) => {
+                  const group = getGroupById(payable.category);
+                  return (
+                    <div key={payable.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{payable.description}</p>
+                          {payable.supplier && (
+                            <p className="text-sm text-gray-600">{payable.supplier}</p>
+                          )}
+                          <p className="text-xs text-gray-500">
+                            {language === 'pt' ? 'Pago em' : 'Paid on'}: {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{payable.description}</p>
-                        {payable.supplier && (
-                          <p className="text-sm text-gray-600">{payable.supplier}</p>
-                        )}
-                        <p className="text-xs text-gray-500">
-                          {language === 'pt' ? 'Pago em' : 'Paid on'}: {new Date(payable.dueDate).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-green-700">
+                            {formatCurrency(payable.amount)}
+                          </p>
+                          <Badge variant="outline" style={{ 
+                            borderColor: group?.color || '#3b82f6', 
+                            color: group?.color || '#3b82f6' 
+                          }}>
+                            {group?.name || 'Geral'}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPayable(payable)}
+                            className="h-8 w-8 p-0 hover:bg-gray-100"
+                          >
+                            <Edit className="h-4 w-4 text-gray-600" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  {language === 'pt' ? 'Excluir Conta a Pagar' : 'Delete Payable'}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {language === 'pt' 
+                                    ? 'Tem certeza que deseja excluir esta conta a pagar? Esta ação não pode ser desfeita.'
+                                    : 'Are you sure you want to delete this payable? This action cannot be undone.'
+                                  }
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>
+                                  {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                                </AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeletePayable(payable.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  {language === 'pt' ? 'Excluir' : 'Delete'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-green-700">
-                          {formatCurrency(payable.amount)}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditPayable(payable)}
-                          className="h-8 w-8 p-0 hover:bg-gray-100"
-                        >
-                          <Edit className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {language === 'pt' ? 'Excluir Conta a Pagar' : 'Delete Payable'}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {language === 'pt' 
-                                  ? 'Tem certeza que deseja excluir esta conta a pagar? Esta ação não pode ser desfeita.'
-                                  : 'Are you sure you want to delete this payable? This action cannot be undone.'
-                                }
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                {language === 'pt' ? 'Cancelar' : 'Cancel'}
-                              </AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeletePayable(payable.id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                {language === 'pt' ? 'Excluir' : 'Delete'}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </TabsContent>
           </Tabs>

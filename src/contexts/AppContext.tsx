@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
-import { Transaction, Category, Payable, Investment, Group } from '@/types';
+import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoal } from '@/types';
 import { 
   getTransactions, 
   getCategories, 
@@ -36,6 +36,8 @@ interface AppContextType {
   payables: Payable[];
   investments: Investment[];
   groups: Group[];
+  budgets: Budget[];
+  goals: FinancialGoal[];
   
   // Loading states
   loading: {
@@ -43,6 +45,8 @@ interface AppContextType {
     categories: boolean;
     payables: boolean;
     groups: boolean;
+    budgets: boolean;
+    goals: boolean;
   };
   
   // CRUD Operations
@@ -66,6 +70,14 @@ interface AppContextType {
   updateInvestment: (id: string, investment: Partial<Investment>) => Promise<void>;
   deleteInvestment: (id: string) => Promise<void>;
   
+  addBudget: (budget: Omit<Budget, 'id'>) => Promise<void>;
+  updateBudget: (id: string, budget: Partial<Budget>) => Promise<void>;
+  deleteBudget: (id: string) => Promise<void>;
+  
+  addGoal: (goal: Omit<FinancialGoal, 'id'>) => Promise<void>;
+  updateGoal: (id: string, goal: Partial<FinancialGoal>) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
+  
   // Error handling
   error: string | null;
   clearError: () => void;
@@ -84,13 +96,17 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   const [payables, setPayables] = useState<Payable[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [goals, setGoals] = useState<FinancialGoal[]>([]);
   
   // Loading states
   const [loading, setLoading] = useState({
     transactions: false,
     categories: false,
     payables: false,
-    groups: false
+    groups: false,
+    budgets: false,
+    goals: false
   });
   
   // Error state
@@ -177,6 +193,61 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   }, [isSignedIn, user, isInitialized, groups.length]);
 
+  // Initialize mock budgets and goals
+  useEffect(() => {
+    if (isSignedIn && user && isInitialized && budgets.length === 0) {
+      const mockBudgets: Budget[] = [
+        {
+          id: '1',
+          name: 'Marketing Digital',
+          category: 'empresa',
+          subcategory: 'Marketing',
+          budgetAmount: 5000,
+          spentAmount: 3200,
+          period: 'monthly',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31'
+        },
+        {
+          id: '2',
+          name: 'Alimentação Familiar',
+          category: 'familia',
+          subcategory: 'Alimentação',
+          budgetAmount: 2000,
+          spentAmount: 1800,
+          period: 'monthly',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31'
+        }
+      ];
+      setBudgets(mockBudgets);
+
+      const mockGoals: FinancialGoal[] = [
+        {
+          id: '1',
+          title: 'Reserva de Emergência',
+          description: 'Construir reserva equivalente a 6 meses de despesas',
+          targetAmount: 50000,
+          currentAmount: 32000,
+          category: 'familia',
+          deadline: '2024-12-31',
+          status: 'active'
+        },
+        {
+          id: '2',
+          title: 'Expansão da Empresa',
+          description: 'Capital para novos equipamentos e contratações',
+          targetAmount: 100000,
+          currentAmount: 65000,
+          category: 'empresa',
+          deadline: '2024-06-30',
+          status: 'active'
+        }
+      ];
+      setGoals(mockGoals);
+    }
+  }, [isSignedIn, user, isInitialized, budgets.length]);
+
   // Load data
   useEffect(() => {
     const loadData = async () => {
@@ -226,7 +297,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           transactions: false,
           categories: false,
           payables: false,
-          groups: false
+          groups: false,
+          budgets: false,
+          goals: false
         });
       }
     };
@@ -432,6 +505,46 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     toast.success('Investimento excluído com sucesso!');
   };
 
+  // Budget CRUD
+  const addBudget = async (budget: Omit<Budget, 'id'>) => {
+    const newBudget: Budget = {
+      ...budget,
+      id: Date.now().toString()
+    };
+    setBudgets(prev => [newBudget, ...prev]);
+    toast.success('Orçamento criado com sucesso!');
+  };
+
+  const updateBudget = async (id: string, budget: Partial<Budget>) => {
+    setBudgets(prev => prev.map(b => b.id === id ? { ...b, ...budget } : b));
+    toast.success('Orçamento atualizado com sucesso!');
+  };
+
+  const deleteBudget = async (id: string) => {
+    setBudgets(prev => prev.filter(b => b.id !== id));
+    toast.success('Orçamento excluído com sucesso!');
+  };
+
+  // Goal CRUD
+  const addGoal = async (goal: Omit<FinancialGoal, 'id'>) => {
+    const newGoal: FinancialGoal = {
+      ...goal,
+      id: Date.now().toString()
+    };
+    setGoals(prev => [newGoal, ...prev]);
+    toast.success('Meta criada com sucesso!');
+  };
+
+  const updateGoal = async (id: string, goal: Partial<FinancialGoal>) => {
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, ...goal } : g));
+    toast.success('Meta atualizada com sucesso!');
+  };
+
+  const deleteGoal = async (id: string) => {
+    setGoals(prev => prev.filter(g => g.id !== id));
+    toast.success('Meta excluída com sucesso!');
+  };
+
   const contextValue = {
     language,
     setLanguage,
@@ -441,6 +554,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     payables,
     investments,
     groups,
+    budgets,
+    goals,
     loading,
     addTransaction,
     updateTransaction,
@@ -457,6 +572,12 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     addInvestment,
     updateInvestment,
     deleteInvestment,
+    addBudget,
+    updateBudget,
+    deleteBudget,
+    addGoal,
+    updateGoal,
+    deleteGoal,
     error,
     clearError
   };

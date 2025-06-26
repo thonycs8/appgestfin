@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TrendingUp, Target, Calendar, DollarSign, PieChart, BarChart3, AlertTriangle, CheckCircle } from 'lucide-react';
+import { TrendingUp, Target, Calendar, DollarSign, PieChart, BarChart3, AlertTriangle, CheckCircle, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,57 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { useApp } from '@/contexts/AppContext';
+import { formatCurrency } from '@/lib/i18n';
 
 // Mock data for financial management
-const financialGoals = [
-  {
-    id: '1',
-    title: 'Reserva de Emergência',
-    description: 'Construir reserva equivalente a 6 meses de despesas',
-    targetAmount: 50000,
-    currentAmount: 32000,
-    category: 'familia' as const,
-    deadline: '2024-12-31',
-    status: 'active' as const
-  },
-  {
-    id: '2',
-    title: 'Expansão da Empresa',
-    description: 'Capital para novos equipamentos e contratações',
-    targetAmount: 100000,
-    currentAmount: 65000,
-    category: 'empresa' as const,
-    deadline: '2024-06-30',
-    status: 'active' as const
-  }
-];
-
-const budgets = [
-  {
-    id: '1',
-    name: 'Marketing Digital',
-    category: 'empresa' as const,
-    subcategory: 'Marketing',
-    budgetAmount: 5000,
-    spentAmount: 3200,
-    period: 'monthly' as const,
-    startDate: '2024-01-01',
-    endDate: '2024-01-31'
-  },
-  {
-    id: '2',
-    name: 'Alimentação Familiar',
-    category: 'familia' as const,
-    subcategory: 'Alimentação',
-    budgetAmount: 2000,
-    spentAmount: 1800,
-    period: 'monthly' as const,
-    startDate: '2024-01-01',
-    endDate: '2024-01-31'
-  }
-];
-
 const performanceData = [
   { month: 'Jan', receita: 25000, despesa: 18000, lucro: 7000 },
   { month: 'Fev', receita: 28000, despesa: 19500, lucro: 8500 },
@@ -77,21 +32,240 @@ const categoryPerformance = [
 ];
 
 export function Management() {
+  const { 
+    budgets, 
+    goals, 
+    groups,
+    addBudget, 
+    updateBudget, 
+    deleteBudget,
+    addGoal,
+    updateGoal,
+    deleteGoal,
+    language 
+  } = useApp();
+
   const [newGoal, setNewGoal] = useState({
     title: '',
     description: '',
     targetAmount: '',
-    category: '' as 'empresa' | 'familia' | '',
+    category: '',
     deadline: ''
   });
 
   const [newBudget, setNewBudget] = useState({
     name: '',
-    category: '' as 'empresa' | 'familia' | '',
+    category: '',
     subcategory: '',
     budgetAmount: '',
     period: 'monthly' as 'monthly' | 'quarterly' | 'yearly'
   });
+
+  const [editingBudget, setEditingBudget] = useState<any>(null);
+  const [editingGoal, setEditingGoal] = useState<any>(null);
+  const [isBudgetDialogOpen, setIsBudgetDialogOpen] = useState(false);
+  const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
+
+  const resetBudgetForm = () => {
+    setNewBudget({
+      name: '',
+      category: '',
+      subcategory: '',
+      budgetAmount: '',
+      period: 'monthly'
+    });
+  };
+
+  const resetGoalForm = () => {
+    setNewGoal({
+      title: '',
+      description: '',
+      targetAmount: '',
+      category: '',
+      deadline: ''
+    });
+  };
+
+  const handleCreateBudget = async () => {
+    if (!newBudget.name || !newBudget.budgetAmount) {
+      alert(language === 'pt' ? 'Por favor, preencha os campos obrigatórios.' : 'Please fill in the required fields.');
+      return;
+    }
+
+    const amount = parseFloat(newBudget.budgetAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert(language === 'pt' ? 'Por favor, digite um valor válido.' : 'Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      await addBudget({
+        name: newBudget.name,
+        category: newBudget.category || 'geral',
+        subcategory: newBudget.subcategory || 'Geral',
+        budgetAmount: amount,
+        spentAmount: 0,
+        period: newBudget.period,
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      });
+
+      resetBudgetForm();
+      setIsBudgetDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating budget:', error);
+    }
+  };
+
+  const handleUpdateBudget = async () => {
+    if (!editingBudget || !newBudget.name || !newBudget.budgetAmount) {
+      alert(language === 'pt' ? 'Por favor, preencha os campos obrigatórios.' : 'Please fill in the required fields.');
+      return;
+    }
+
+    const amount = parseFloat(newBudget.budgetAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert(language === 'pt' ? 'Por favor, digite um valor válido.' : 'Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      await updateBudget(editingBudget.id, {
+        name: newBudget.name,
+        category: newBudget.category || 'geral',
+        subcategory: newBudget.subcategory || 'Geral',
+        budgetAmount: amount,
+        period: newBudget.period
+      });
+
+      setEditingBudget(null);
+      resetBudgetForm();
+      setIsBudgetDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating budget:', error);
+    }
+  };
+
+  const handleEditBudget = (budget: any) => {
+    setEditingBudget(budget);
+    setNewBudget({
+      name: budget.name,
+      category: budget.category,
+      subcategory: budget.subcategory,
+      budgetAmount: budget.budgetAmount.toString(),
+      period: budget.period
+    });
+    setIsBudgetDialogOpen(true);
+  };
+
+  const handleDeleteBudget = async (id: string) => {
+    if (confirm(language === 'pt' ? 'Tem certeza que deseja excluir este orçamento?' : 'Are you sure you want to delete this budget?')) {
+      try {
+        await deleteBudget(id);
+      } catch (error) {
+        console.error('Error deleting budget:', error);
+      }
+    }
+  };
+
+  const handleCreateGoal = async () => {
+    if (!newGoal.title || !newGoal.targetAmount) {
+      alert(language === 'pt' ? 'Por favor, preencha os campos obrigatórios.' : 'Please fill in the required fields.');
+      return;
+    }
+
+    const amount = parseFloat(newGoal.targetAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert(language === 'pt' ? 'Por favor, digite um valor válido.' : 'Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      await addGoal({
+        title: newGoal.title,
+        description: newGoal.description,
+        targetAmount: amount,
+        currentAmount: 0,
+        category: newGoal.category || 'geral',
+        deadline: newGoal.deadline,
+        status: 'active'
+      });
+
+      resetGoalForm();
+      setIsGoalDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating goal:', error);
+    }
+  };
+
+  const handleUpdateGoal = async () => {
+    if (!editingGoal || !newGoal.title || !newGoal.targetAmount) {
+      alert(language === 'pt' ? 'Por favor, preencha os campos obrigatórios.' : 'Please fill in the required fields.');
+      return;
+    }
+
+    const amount = parseFloat(newGoal.targetAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert(language === 'pt' ? 'Por favor, digite um valor válido.' : 'Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      await updateGoal(editingGoal.id, {
+        title: newGoal.title,
+        description: newGoal.description,
+        targetAmount: amount,
+        category: newGoal.category || 'geral',
+        deadline: newGoal.deadline
+      });
+
+      setEditingGoal(null);
+      resetGoalForm();
+      setIsGoalDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating goal:', error);
+    }
+  };
+
+  const handleEditGoal = (goal: any) => {
+    setEditingGoal(goal);
+    setNewGoal({
+      title: goal.title,
+      description: goal.description,
+      targetAmount: goal.targetAmount.toString(),
+      category: goal.category,
+      deadline: goal.deadline
+    });
+    setIsGoalDialogOpen(true);
+  };
+
+  const handleDeleteGoal = async (id: string) => {
+    if (confirm(language === 'pt' ? 'Tem certeza que deseja excluir esta meta?' : 'Are you sure you want to delete this goal?')) {
+      try {
+        await deleteGoal(id);
+      } catch (error) {
+        console.error('Error deleting goal:', error);
+      }
+    }
+  };
+
+  const handleBudgetDialogOpenChange = (open: boolean) => {
+    setIsBudgetDialogOpen(open);
+    if (!open) {
+      setEditingBudget(null);
+      resetBudgetForm();
+    }
+  };
+
+  const handleGoalDialogOpenChange = (open: boolean) => {
+    setIsGoalDialogOpen(open);
+    if (!open) {
+      setEditingGoal(null);
+      resetGoalForm();
+    }
+  };
+
+  const getGroupById = (id: string) => groups.find(g => g.id === id);
 
   return (
     <div className="space-y-6">
@@ -118,7 +292,7 @@ export function Management() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Metas Atingidas</p>
               <p className="text-2xl font-bold text-gray-900">75%</p>
-              <p className="text-xs text-blue-600">3 de 4 metas</p>
+              <p className="text-xs text-blue-600">{goals.filter(g => g.status === 'completed').length} de {goals.length} metas</p>
             </div>
           </CardContent>
         </Card>
@@ -170,7 +344,7 @@ export function Management() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Valor']} />
+                  <Tooltip formatter={(value) => [`€${value.toLocaleString('pt-PT')}`, 'Valor']} />
                   <Legend />
                   <Line type="monotone" dataKey="receita" stroke="#22c55e" strokeWidth={3} name="Receita" />
                   <Line type="monotone" dataKey="despesa" stroke="#ef4444" strokeWidth={3} name="Despesa" />
@@ -190,20 +364,24 @@ export function Management() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {financialGoals.map((goal) => {
+                {goals.slice(0, 3).map((goal) => {
                   const progress = (goal.currentAmount / goal.targetAmount) * 100;
+                  const group = getGroupById(goal.category);
                   return (
                     <div key={goal.id} className="space-y-2">
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium">{goal.title}</h4>
-                        <Badge variant={goal.category === 'empresa' ? 'default' : 'secondary'}>
-                          {goal.category === 'empresa' ? 'Empresa' : 'Família'}
+                        <Badge variant="outline" style={{ 
+                          borderColor: group?.color || '#3b82f6', 
+                          color: group?.color || '#3b82f6' 
+                        }}>
+                          {group?.name || 'Geral'}
                         </Badge>
                       </div>
                       <Progress value={progress} className="h-2" />
                       <div className="flex justify-between text-sm text-gray-600">
-                        <span>R$ {goal.currentAmount.toLocaleString('pt-BR')}</span>
-                        <span>R$ {goal.targetAmount.toLocaleString('pt-BR')}</span>
+                        <span>{formatCurrency(goal.currentAmount)}</span>
+                        <span>{formatCurrency(goal.targetAmount)}</span>
                       </div>
                     </div>
                   );
@@ -219,10 +397,11 @@ export function Management() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {budgets.map((budget) => {
+                {budgets.slice(0, 3).map((budget) => {
                   const usage = (budget.spentAmount / budget.budgetAmount) * 100;
                   const isOverBudget = usage > 100;
                   const isNearLimit = usage > 80 && usage <= 100;
+                  const group = getGroupById(budget.category);
                   
                   return (
                     <div key={budget.id} className="space-y-2">
@@ -236,8 +415,11 @@ export function Management() {
                           ) : (
                             <CheckCircle className="h-4 w-4 text-green-500" />
                           )}
-                          <Badge variant={budget.category === 'empresa' ? 'default' : 'secondary'}>
-                            {budget.category === 'empresa' ? 'Empresa' : 'Família'}
+                          <Badge variant="outline" style={{ 
+                            borderColor: group?.color || '#3b82f6', 
+                            color: group?.color || '#3b82f6' 
+                          }}>
+                            {group?.name || 'Geral'}
                           </Badge>
                         </div>
                       </div>
@@ -246,9 +428,9 @@ export function Management() {
                         className={`h-2 ${isOverBudget ? 'bg-red-100' : isNearLimit ? 'bg-yellow-100' : 'bg-green-100'}`} 
                       />
                       <div className="flex justify-between text-sm text-gray-600">
-                        <span>R$ {budget.spentAmount.toLocaleString('pt-BR')}</span>
+                        <span>{formatCurrency(budget.spentAmount)}</span>
                         <span className={usage > 100 ? 'text-red-600 font-medium' : ''}>
-                          R$ {budget.budgetAmount.toLocaleString('pt-BR')} ({usage.toFixed(1)}%)
+                          {formatCurrency(budget.budgetAmount)} ({usage.toFixed(1)}%)
                         </span>
                       </div>
                     </div>
@@ -263,7 +445,7 @@ export function Management() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Metas Financeiras</CardTitle>
-              <Dialog>
+              <Dialog open={isGoalDialogOpen} onOpenChange={handleGoalDialogOpenChange}>
                 <DialogTrigger asChild>
                   <Button>
                     <Target className="mr-2 h-4 w-4" />
@@ -272,7 +454,7 @@ export function Management() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Criar Nova Meta</DialogTitle>
+                    <DialogTitle>{editingGoal ? 'Editar Meta' : 'Criar Nova Meta'}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -301,16 +483,25 @@ export function Management() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="category">Categoria</Label>
-                      <Select value={newGoal.category} onValueChange={(value: 'empresa' | 'familia') => 
+                      <Label htmlFor="category">Grupo</Label>
+                      <Select value={newGoal.category} onValueChange={(value) => 
                         setNewGoal(prev => ({...prev, category: value}))
                       }>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
+                          <SelectValue placeholder="Selecione o grupo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="empresa">Empresa</SelectItem>
-                          <SelectItem value="familia">Família</SelectItem>
+                          {groups.filter(g => g.isActive).map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: group.color }}
+                                />
+                                {group.name}
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -322,18 +513,22 @@ export function Management() {
                         onChange={(e) => setNewGoal(prev => ({...prev, deadline: e.target.value}))}
                       />
                     </div>
-                    <Button className="w-full">
-                      Criar Meta
+                    <Button 
+                      className="w-full"
+                      onClick={editingGoal ? handleUpdateGoal : handleCreateGoal}
+                    >
+                      {editingGoal ? 'Atualizar Meta' : 'Criar Meta'}
                     </Button>
                   </div>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent className="space-y-6">
-              {financialGoals.map((goal) => {
+              {goals.map((goal) => {
                 const progress = (goal.currentAmount / goal.targetAmount) * 100;
                 const remaining = goal.targetAmount - goal.currentAmount;
                 const daysUntilDeadline = Math.ceil((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const group = getGroupById(goal.category);
                 
                 return (
                   <div key={goal.id} className="p-6 border rounded-lg space-y-4">
@@ -342,20 +537,57 @@ export function Management() {
                         <h3 className="text-lg font-semibold">{goal.title}</h3>
                         <p className="text-gray-600 text-sm">{goal.description}</p>
                       </div>
-                      <Badge variant={goal.category === 'empresa' ? 'default' : 'secondary'}>
-                        {goal.category === 'empresa' ? 'Empresa' : 'Família'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" style={{ 
+                          borderColor: group?.color || '#3b82f6', 
+                          color: group?.color || '#3b82f6' 
+                        }}>
+                          {group?.name || 'Geral'}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditGoal(goal)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Meta</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir esta meta? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteGoal(goal.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Progresso: {progress.toFixed(1)}%</span>
-                        <span>Faltam: R$ {remaining.toLocaleString('pt-BR')}</span>
+                        <span>Faltam: {formatCurrency(remaining)}</span>
                       </div>
                       <Progress value={progress} className="h-3" />
                       <div className="flex justify-between text-sm text-gray-600">
-                        <span>R$ {goal.currentAmount.toLocaleString('pt-BR')}</span>
-                        <span>R$ {goal.targetAmount.toLocaleString('pt-BR')}</span>
+                        <span>{formatCurrency(goal.currentAmount)}</span>
+                        <span>{formatCurrency(goal.targetAmount)}</span>
                       </div>
                     </div>
                     
@@ -379,7 +611,7 @@ export function Management() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Orçamentos</CardTitle>
-              <Dialog>
+              <Dialog open={isBudgetDialogOpen} onOpenChange={handleBudgetDialogOpenChange}>
                 <DialogTrigger asChild>
                   <Button>
                     <DollarSign className="mr-2 h-4 w-4" />
@@ -388,7 +620,7 @@ export function Management() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Criar Novo Orçamento</DialogTitle>
+                    <DialogTitle>{editingBudget ? 'Editar Orçamento' : 'Criar Novo Orçamento'}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -400,16 +632,25 @@ export function Management() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="category">Categoria</Label>
-                      <Select value={newBudget.category} onValueChange={(value: 'empresa' | 'familia') => 
+                      <Label htmlFor="category">Grupo</Label>
+                      <Select value={newBudget.category} onValueChange={(value) => 
                         setNewBudget(prev => ({...prev, category: value}))
                       }>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
+                          <SelectValue placeholder="Selecione o grupo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="empresa">Empresa</SelectItem>
-                          <SelectItem value="familia">Família</SelectItem>
+                          {groups.filter(g => g.isActive).map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: group.color }}
+                                />
+                                {group.name}
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -445,8 +686,11 @@ export function Management() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button className="w-full">
-                      Criar Orçamento
+                    <Button 
+                      className="w-full"
+                      onClick={editingBudget ? handleUpdateBudget : handleCreateBudget}
+                    >
+                      {editingBudget ? 'Atualizar Orçamento' : 'Criar Orçamento'}
                     </Button>
                   </div>
                 </DialogContent>
@@ -458,6 +702,7 @@ export function Management() {
                 const remaining = budget.budgetAmount - budget.spentAmount;
                 const isOverBudget = usage > 100;
                 const isNearLimit = usage > 80 && usage <= 100;
+                const group = getGroupById(budget.category);
                 
                 return (
                   <div key={budget.id} className={`p-6 border rounded-lg space-y-4 ${
@@ -478,9 +723,44 @@ export function Management() {
                         ) : (
                           <CheckCircle className="h-5 w-5 text-green-500" />
                         )}
-                        <Badge variant={budget.category === 'empresa' ? 'default' : 'secondary'}>
-                          {budget.category === 'empresa' ? 'Empresa' : 'Família'}
+                        <Badge variant="outline" style={{ 
+                          borderColor: group?.color || '#3b82f6', 
+                          color: group?.color || '#3b82f6' 
+                        }}>
+                          {group?.name || 'Geral'}
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditBudget(budget)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Orçamento</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteBudget(budget.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                     
@@ -488,7 +768,7 @@ export function Management() {
                       <div className="flex justify-between text-sm">
                         <span>Utilização: {usage.toFixed(1)}%</span>
                         <span className={remaining < 0 ? 'text-red-600 font-medium' : ''}>
-                          {remaining >= 0 ? `Restam: R$ ${remaining.toLocaleString('pt-BR')}` : `Excesso: R$ ${Math.abs(remaining).toLocaleString('pt-BR')}`}
+                          {remaining >= 0 ? `Restam: ${formatCurrency(remaining)}` : `Excesso: ${formatCurrency(Math.abs(remaining))}`}
                         </span>
                       </div>
                       <Progress 
@@ -500,8 +780,8 @@ export function Management() {
                         }`}
                       />
                       <div className="flex justify-between text-sm text-gray-600">
-                        <span>R$ {budget.spentAmount.toLocaleString('pt-BR')}</span>
-                        <span>R$ {budget.budgetAmount.toLocaleString('pt-BR')}</span>
+                        <span>{formatCurrency(budget.spentAmount)}</span>
+                        <span>{formatCurrency(budget.budgetAmount)}</span>
                       </div>
                     </div>
                     
@@ -509,9 +789,6 @@ export function Management() {
                       <span className="text-gray-600">
                         Período: {budget.period === 'monthly' ? 'Mensal' : budget.period === 'quarterly' ? 'Trimestral' : 'Anual'}
                       </span>
-                      <Button size="sm" variant="outline">
-                        Editar Orçamento
-                      </Button>
                     </div>
                   </div>
                 );
@@ -531,7 +808,7 @@ export function Management() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Valor']} />
+                  <Tooltip formatter={(value) => [`€${value.toLocaleString('pt-PT')}`, 'Valor']} />
                   <Legend />
                   <Bar dataKey="valor" fill="#3b82f6" name="Realizado" />
                   <Bar dataKey="meta" fill="#e5e7eb" name="Meta" />
