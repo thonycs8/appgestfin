@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { LandingPage } from '@/components/landing/LandingPage';
 import { Dashboard } from '@/pages/Dashboard';
+import { Calendar } from '@/pages/Calendar';
 import { Income } from '@/pages/Income';
 import { Expenses } from '@/pages/Expenses';
 import { Payables } from '@/pages/Payables';
@@ -25,6 +26,7 @@ import './App.css';
 
 const pageComponents = {
   dashboard: Dashboard,
+  calendar: Calendar,
   income: Income,
   expenses: Expenses,
   cashflow: Dashboard, // Placeholder
@@ -46,6 +48,7 @@ const pageComponents = {
 const pageTitles = {
   pt: {
     dashboard: 'Dashboard',
+    calendar: 'Calendário Financeiro',
     income: 'Receitas',
     expenses: 'Despesas',
     cashflow: 'Fluxo de Caixa',
@@ -65,6 +68,7 @@ const pageTitles = {
   },
   en: {
     dashboard: 'Dashboard',
+    calendar: 'Financial Calendar',
     income: 'Income',
     expenses: 'Expenses',
     cashflow: 'Cash Flow',
