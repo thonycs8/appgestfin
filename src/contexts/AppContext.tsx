@@ -2,24 +2,26 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
 import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoal } from '@/types';
-import { 
-  getTransactions, 
-  getCategories, 
+import { 
+  getTransactions, 
+  getCategories, 
   getPayables,
   createTransaction as dbCreateTransaction,
   createCategory as dbCreateCategory,
   createPayable as dbCreatePayable,
   updateTransaction as dbUpdateTransaction,
+  updateCategory as dbUpdateCategory,
   updatePayable as dbUpdatePayable,
   deleteTransaction as dbDeleteTransaction,
+  deleteCategory as dbDeleteCategory,
   deletePayable as dbDeletePayable
 } from '@/lib/database';
-import { 
+import { 
   DatabaseError,
   ValidationError,
   RateLimitError,
-  withErrorHandling, 
-  FinancialError 
+  withErrorHandling, 
+  FinancialError 
 } from '@/lib/errorHandling';
 import { supabase } from '@/lib/supabase'; // Certifique-se que 'supabase' é a instância do cliente Supabase
 import { toast } from 'sonner';
@@ -425,10 +427,6 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   };
 
-  // As outras funções CRUD (Category, Payable, etc.) também devem chamar `await ensureSupabaseAuth();`
-  // antes de interagir com `dbCreateCategory`, `dbCreatePayable`, etc.
-  // Adaptei `addCategory` e `addPayable` como exemplo.
-  
   // Category CRUD
   const addCategory = async (category: Omit<Category, 'id' | 'createdAt'>) => {
     if (!user) {
@@ -453,7 +451,53 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   };
 
-  // ... (updateCategory, deleteCategory - se interagirem com o DB, também adicione ensureSupabaseAuth)
+  const updateCategory = async (id: string, category: Partial<Category>) => {
+    if (!user) {
+        toast.error('Usuário não autenticado. Faça login para atualizar categorias.');
+        throw new Error('User not authenticated');
+    }
+    
+    try {
+      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await withErrorHandling('update_category', async () => {
+        const updatedCategory = await dbUpdateCategory(id, category, user.id);
+        setCategories(prev => prev.map(c => c.id === id ? updatedCategory : c));
+        toast.success('Categoria atualizada com sucesso!');
+      }, {
+        type: 'data',
+        operation: 'update_category',
+        userId: user.id,
+        categoryId: id,
+      });
+    } catch (error) {
+      handleError(error, 'atualização de categoria');
+      throw error;
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (!user) {
+        toast.error('Usuário não autenticado. Faça login para excluir categorias.');
+        throw new Error('User not authenticated');
+    }
+    
+    try {
+      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await withErrorHandling('delete_category', async () => {
+        await dbDeleteCategory(id, user.id);
+        setCategories(prev => prev.filter(c => c.id !== id));
+        toast.success('Categoria excluída com sucesso!');
+      }, {
+        type: 'data',
+        operation: 'delete_category',
+        userId: user.id,
+        categoryId: id,
+      });
+    } catch (error) {
+      handleError(error, 'exclusão de categoria');
+      throw error;
+    }
+  };
 
   // Group CRUD (continuam sendo mock, não precisam de ensureSupabaseAuth se não acessam o DB)
   const addGroup = async (group: Omit<Group, 'id' | 'createdAt'>) => {
@@ -504,9 +548,54 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   };
 
-  // ... (updatePayable, deletePayable - também adicione ensureSupabaseAuth)
+  const updatePayable = async (id: string, payable: Partial<Payable>) => {
+    if (!user) {
+        toast.error('Usuário não autenticado. Faça login para atualizar contas a pagar.');
+        throw new Error('User not authenticated');
+    }
+    
+    try {
+      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await withErrorHandling('update_payable', async () => {
+        const updatedPayable = await dbUpdatePayable(id, payable, user.id);
+        setPayables(prev => prev.map(p => p.id === id ? updatedPayable : p));
+        toast.success('Conta a pagar atualizada com sucesso!');
+      }, {
+        type: 'financial',
+        operation: 'update_payable',
+        userId: user.id,
+        payableId: id,
+      });
+    } catch (error) {
+      handleError(error, 'atualização de conta a pagar');
+      throw error;
+    }
+  };
 
-  // ... (o restante do seu AppContext.tsx permanece o mesmo)
+  const deletePayable = async (id: string) => {
+    if (!user) {
+        toast.error('Usuário não autenticado. Faça login para excluir contas a pagar.');
+        throw new Error('User not authenticated');
+    }
+    
+    try {
+      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await withErrorHandling('delete_payable', async () => {
+        await dbDeletePayable(id, user.id);
+        setPayables(prev => prev.filter(p => p.id !== id));
+        toast.success('Conta a pagar excluída com sucesso!');
+      }, {
+        type: 'financial',
+        operation: 'delete_payable',
+        userId: user.id,
+        payableId: id,
+      });
+    } catch (error) {
+      handleError(error, 'exclusão de conta a pagar');
+      throw error;
+    }
+  };
+
   // Investment CRUD (mock)
   const addInvestment = async (investment: Omit<Investment, 'id'>) => {
     const newInvestment: Investment = {

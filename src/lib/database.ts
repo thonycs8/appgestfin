@@ -399,6 +399,104 @@ export async function getCategories(userId: string): Promise<Category[]> {
   }
 }
 
+export async function updateCategory(
+  id: string,
+  updates: Partial<Category>,
+  userId: string
+): Promise<Category> {
+  const startTime = Date.now();
+  
+  console.log('✏️ Updating category:', id, 'for user:', userId);
+  
+  if (!checkRateLimit(`categories:${userId}`, RATE_LIMITS.CATEGORIES_PER_MINUTE)) {
+    throw new RateLimitError('Too many category requests. Please try again later.');
+  }
+
+  // Verify authentication
+  await verifyAuth(userId);
+
+  const sanitizedUpdates: any = {};
+  
+  if (updates.name) sanitizedUpdates.name = sanitizeInput(updates.name);
+  if (updates.type) sanitizedUpdates.type = updates.type;
+  if (updates.color) sanitizedUpdates.color = updates.color;
+  if (updates.isActive !== undefined) sanitizedUpdates.is_active = updates.isActive;
+
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .update(sanitizedUpdates)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Database error updating category:', error);
+      throw new DatabaseError(`Failed to update category: ${error.message}`, error.code, {
+        operation: 'update_category',
+        table: 'categories',
+        userId,
+        categoryId: id,
+        duration: Date.now() - startTime,
+      });
+    }
+    
+    console.log('✅ Category updated successfully:', id);
+    
+    return {
+      id: data.id,
+      name: data.name,
+      type: data.type,
+      color: data.color,
+      isActive: data.is_active,
+      createdAt: data.created_at
+    };
+  } catch (error) {
+    if (error instanceof DatabaseError) throw error;
+    throw new DatabaseError('Unexpected error updating category', undefined, {
+      operation: 'update_category',
+      originalError: error,
+    });
+  }
+}
+
+export async function deleteCategory(id: string, userId: string): Promise<void> {
+  const startTime = Date.now();
+  
+  console.log('🗑️ Deleting category:', id, 'for user:', userId);
+  
+  // Verify authentication
+  await verifyAuth(userId);
+  
+  try {
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Database error deleting category:', error);
+      throw new DatabaseError(`Failed to delete category: ${error.message}`, error.code, {
+        operation: 'delete_category',
+        table: 'categories',
+        userId,
+        categoryId: id,
+        duration: Date.now() - startTime,
+      });
+    }
+    
+    console.log('✅ Category deleted successfully:', id);
+  } catch (error) {
+    if (error instanceof DatabaseError) throw error;
+    throw new DatabaseError('Unexpected error deleting category', undefined, {
+      operation: 'delete_category',
+      originalError: error,
+    });
+  }
+}
+
 // Payables
 export async function createPayable(
   payable: Omit<Payable, 'id'>,
