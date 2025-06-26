@@ -1,2 +1,11 @@
 /// <reference types="vite/client" />
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_cmVndWxhci1tYXlmbHktODguY2xlcmsuYWNjb3VudHMuZGV2JA
+
+interface ImportMetaEnv {
+  readonly VITE_CLERK_PUBLISHABLE_KEY: string
+  readonly VITE_SUPABASE_URL: string
+  readonly VITE_SUPABASE_ANON_KEY: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

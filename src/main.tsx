@@ -21,28 +21,28 @@ function ErrorFallback({ error, resetError }: { error: Error; resetError: () => 
           </svg>
         </div>
         <h1 className="text-xl font-semibold text-gray-900 text-center mb-2">
-          Oops! Algo deu errado
+          Connection Error
         </h1>
         <p className="text-gray-600 text-center mb-6">
-          Ocorreu um erro inesperado. Nossa equipe foi notificada e está trabalhando para resolver o problema.
+          Unable to connect to authentication service. Please check your internet connection and try again.
         </p>
         <div className="space-y-3">
           <button
             onClick={resetError}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
           >
-            Tentar Novamente
+            Try Again
           </button>
           <button
             onClick={() => window.location.reload()}
             className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
           >
-            Recarregar Página
+            Reload Page
           </button>
         </div>
         {import.meta.env.DEV && (
           <details className="mt-4">
-            <summary className="text-sm text-gray-500 cursor-pointer">Detalhes do erro (dev)</summary>
+            <summary className="text-sm text-gray-500 cursor-pointer">Error details (dev)</summary>
             <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
               {error.message}
               {error.stack}
@@ -56,7 +56,10 @@ function ErrorFallback({ error, resetError }: { error: Error; resetError: () => 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    <ClerkProvider 
+      publishableKey={PUBLISHABLE_KEY}
+      afterSignOutUrl="/"
+    >
       <App />
     </ClerkProvider>
   </StrictMode>
