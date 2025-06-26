@@ -228,7 +228,7 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
   }
 }
 
-// Categories
+// Categories - Simplified without RLS dependency
 export async function createCategory(
   category: Omit<Category, 'id' | 'createdAt'>,
   userId: string,
@@ -246,16 +246,19 @@ export async function createCategory(
   const sanitizedCategory = {
     name: sanitizeInput(category.name),
     type: category.type,
-    category: category.category,
     color: category.color || '#000000',
     user_id: userId,
     is_active: category.isActive !== undefined ? category.isActive : true
   };
 
   try {
+    // Use upsert to avoid conflicts
     const { data, error } = await supabase
       .from('categories')
-      .insert([sanitizedCategory])
+      .upsert([sanitizedCategory], { 
+        onConflict: 'user_id,name,type',
+        ignoreDuplicates: false 
+      })
       .select()
       .single();
 
@@ -275,7 +278,6 @@ export async function createCategory(
       id: data.id,
       name: data.name,
       type: data.type,
-      category: data.category,
       color: data.color,
       isActive: data.is_active,
       createdAt: data.created_at
@@ -312,7 +314,6 @@ export async function getCategories(userId: string): Promise<Category[]> {
       id: item.id,
       name: item.name,
       type: item.type,
-      category: item.category,
       color: item.color,
       isActive: item.is_active,
       createdAt: item.created_at
