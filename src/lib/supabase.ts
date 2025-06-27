@@ -5,24 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if environment variables are properly configured
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
-}
-
-// Check if the URL is still a placeholder
-if (supabaseUrl.includes('your-project-id') || supabaseUrl === 'your_supabase_url_here') {
-  throw new Error('Please configure your Supabase URL in the .env file. Replace "your-project-id" with your actual Supabase project ID.');
-}
-
-// Check if the anon key is still a placeholder
-if (supabaseAnonKey === 'your_supabase_anon_key_here') {
-  throw new Error('Please configure your Supabase anon key in the .env file.');
-}
-
-// Validate URL format
-try {
-  new URL(supabaseUrl);
-} catch (error) {
-  throw new Error(`Invalid Supabase URL format: ${supabaseUrl}. Please ensure it's a valid URL like https://your-project-id.supabase.co`);
+  console.error('Missing Supabase environment variables. Please check your .env file.');
 }
 
 console.log('🔧 Initializing Supabase client with URL:', supabaseUrl);

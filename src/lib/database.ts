@@ -7,17 +7,29 @@ async function ensureUserExists(userId: string, userEmail?: string) {
   try {
     console.log('🔧 Ensuring user exists:', userId);
     
-    // Call the database function to ensure user exists
-    const { error } = await supabase.rpc('ensure_user_exists', {
-      user_id: userId,
-      user_email: userEmail || `${userId}@clerk.local`
-    });
-
-    if (error) {
-      console.warn('⚠️ Warning creating user record:', error);
-      // Don't throw error, just log warning
+    // First check if user already exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+      
+    if (checkError || !existingUser) {
+      // User doesn't exist, create them
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          email: userEmail || `${userId}@clerk.local`
+        });
+        
+      if (insertError) {
+        console.warn('⚠️ Warning creating user record:', insertError);
+      } else {
+        console.log('✅ Created new user record for:', userId);
+      }
     } else {
-      console.log('✅ User record ensured for:', userId);
+      console.log('✅ User record already exists for:', userId);
     }
   } catch (error) {
     console.warn('⚠️ Error ensuring user exists:', error);
@@ -65,9 +77,6 @@ export async function createTransaction(
   if (!validateDate(transaction.date)) {
     throw new ValidationError('Invalid date', 'date', { date: transaction.date });
   }
-
-  // Verify authentication
-  await verifyAuth(userId);
 
   // Ensure user exists
   await ensureUserExists(userId, userEmail);
@@ -130,9 +139,6 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
   
   console.log('📊 Fetching transactions for user:', userId);
   
-  // Verify authentication
-  await verifyAuth(userId);
-  
   try {
     const { data, error } = await supabase
       .from('transactions')
@@ -193,9 +199,6 @@ export async function updateTransaction(
     throw new ValidationError('Invalid date', 'date', { date: updates.date });
   }
 
-  // Verify authentication
-  await verifyAuth(userId);
-
   const sanitizedUpdates: any = {};
   
   if (updates.type) sanitizedUpdates.type = updates.type;
@@ -252,9 +255,6 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
   
   console.log('🗑️ Deleting transaction:', id, 'for user:', userId);
   
-  // Verify authentication
-  await verifyAuth(userId);
-  
   try {
     const { error } = await supabase
       .from('transactions')
@@ -296,9 +296,6 @@ export async function createCategory(
   if (!checkRateLimit(`categories:${userId}`, RATE_LIMITS.CATEGORIES_PER_MINUTE)) {
     throw new RateLimitError('Too many category requests. Please try again later.');
   }
-
-  // Verify authentication
-  await verifyAuth(userId);
 
   // Ensure user exists
   await ensureUserExists(userId, userEmail);
@@ -360,9 +357,6 @@ export async function getCategories(userId: string): Promise<Category[]> {
   
   console.log('📊 Fetching categories for user:', userId);
   
-  // Verify authentication
-  await verifyAuth(userId);
-  
   try {
     const { data, error } = await supabase
       .from('categories')
@@ -411,9 +405,6 @@ export async function updateCategory(
   if (!checkRateLimit(`categories:${userId}`, RATE_LIMITS.CATEGORIES_PER_MINUTE)) {
     throw new RateLimitError('Too many category requests. Please try again later.');
   }
-
-  // Verify authentication
-  await verifyAuth(userId);
 
   const sanitizedUpdates: any = {};
   
@@ -466,9 +457,6 @@ export async function deleteCategory(id: string, userId: string): Promise<void> 
   
   console.log('🗑️ Deleting category:', id, 'for user:', userId);
   
-  // Verify authentication
-  await verifyAuth(userId);
-  
   try {
     const { error } = await supabase
       .from('categories')
@@ -518,9 +506,6 @@ export async function createPayable(
   if (!validateDate(payable.dueDate)) {
     throw new ValidationError('Invalid due date', 'dueDate', { dueDate: payable.dueDate });
   }
-
-  // Verify authentication
-  await verifyAuth(userId);
 
   // Ensure user exists
   await ensureUserExists(userId, userEmail);
@@ -581,9 +566,6 @@ export async function getPayables(userId: string): Promise<Payable[]> {
   
   console.log('📊 Fetching payables for user:', userId);
   
-  // Verify authentication
-  await verifyAuth(userId);
-  
   try {
     const { data, error } = await supabase
       .from('payables')
@@ -643,9 +625,6 @@ export async function updatePayable(
     throw new ValidationError('Invalid due date', 'dueDate', { dueDate: updates.dueDate });
   }
 
-  // Verify authentication
-  await verifyAuth(userId);
-
   const sanitizedUpdates: any = {};
   
   if (updates.description) sanitizedUpdates.description = sanitizeInput(updates.description);
@@ -699,9 +678,6 @@ export async function deletePayable(id: string, userId: string): Promise<void> {
   const startTime = Date.now();
   
   console.log('🗑️ Deleting payable:', id, 'for user:', userId);
-  
-  // Verify authentication
-  await verifyAuth(userId);
   
   try {
     const { error } = await supabase

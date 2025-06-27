@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'; // Adicionado useCallback
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
 import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoal } from '@/types';
@@ -23,11 +23,10 @@ import {
   withErrorHandling, 
   FinancialError 
 } from '@/lib/errorHandling';
-import { supabase } from '@/lib/supabase'; // Certifique-se que 'supabase' é a instância do cliente Supabase
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 interface AppContextType {
-  // ... (o restante da sua interface AppContextType permanece o mesmo)
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: TranslationKey) => string;
@@ -75,8 +74,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode | ((context: { language: Language }) => ReactNode) }) {
   const [language, setLanguage] = useState<Language>('pt');
-  const { getToken, isSignedIn, isLoaded: clerkLoaded } = useAuth(); // Renomeado isLoaded para evitar conflito
-  const { user, isLoaded: userLoaded } = useUser(); // Renomeado isLoaded para evitar conflito
+  const { getToken, isSignedIn, isLoaded: clerkLoaded } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
   
   // Data states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -99,7 +98,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   
   // Error state
   const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false); // Indica se a autenticação Supabase foi configurada
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const t = (key: TranslationKey): string => {
     return translations[language][key] || key;
@@ -128,7 +127,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     toast.error(message);
   };
 
-  // NOVA FUNÇÃO: Garante que a sessão Supabase esteja autenticada com o token mais recente do Clerk
+  // Ensure Supabase auth is set up with the latest Clerk token
   const ensureSupabaseAuth = useCallback(async () => {
     if (!clerkLoaded || !userLoaded) {
       console.warn('🔐 Clerk not fully loaded yet. Cannot ensure Supabase auth.');
@@ -140,7 +139,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
 
     try {
-      // Obter o token JWT mais recente do Clerk
+      // Get the latest JWT token from Clerk
       const token = await getToken({ template: 'supabase' });
       
       if (!token) {
@@ -148,11 +147,10 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         throw new Error('AuthSessionMissingError: No JWT token available from Clerk.');
       }
       
-      // Definir a sessão no cliente Supabase
-      // Isso é crucial para que as chamadas subsequentes ao DB sejam autenticadas
+      // Set the session in the Supabase client
       const { error: setSessionError } = await supabase.auth.setSession({
         access_token: token,
-        refresh_token: '', // Clerk gerencia o refresh
+        refresh_token: '', // Clerk manages the refresh
       });
 
       if (setSessionError) {
@@ -164,14 +162,13 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       return { userId: user.id, jwt: token };
     } catch (error) {
       console.error('❌ Error in ensureSupabaseAuth:', error);
-      throw error; // Re-lança o erro para ser tratado pela função chamadora
+      throw error;
     }
-  }, [clerkLoaded, userLoaded, isSignedIn, user, getToken]); // Dependências para useCallback
+  }, [clerkLoaded, userLoaded, isSignedIn, user, getToken]);
 
-  // useEffect para inicializar a sessão Supabase UMA VEZ ao carregar o app ou autenticar
+  // Initialize auth and data once when the app loads
   useEffect(() => {
     const initializeAuthAndData = async () => {
-      // isLoaded (do useAuth) e userLoaded (do useUser) garantem que o Clerk carregou.
       if (!clerkLoaded || !userLoaded) {
         console.log('🔐 Clerk not loaded, skipping initial Supabase auth setup.');
         return;
@@ -179,30 +176,28 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
       if (!isSignedIn) {
         console.log('🔐 User not signed in. Skipping initial Supabase auth setup and data load.');
-        setIsInitialized(false); // Garante que isInitialized seja false se não estiver logado
+        setIsInitialized(false);
         return;
       }
 
       try {
         console.log('🔐 Initializing Supabase auth and loading initial data...');
-        // Chama ensureSupabaseAuth para garantir a sessão antes de carregar os dados iniciais
-        await ensureSupabaseAuth(); 
+        await ensureSupabaseAuth();
         
         console.log('✅ Initial Supabase session set. Starting data load.');
-        setIsInitialized(true); // Marca como inicializado após configurar a sessão
+        setIsInitialized(true);
 
       } catch (error) {
         console.error('❌ Error during initial Supabase setup:', error);
         setError('Erro na inicialização da autenticação. Tente fazer login novamente.');
-        setIsInitialized(false); // Falhou na inicialização
+        setIsInitialized(false);
       }
     };
 
     initializeAuthAndData();
   }, [clerkLoaded, userLoaded, isSignedIn, ensureSupabaseAuth]);
 
-
-  // Initialize default groups (Mantido o mesmo)
+  // Initialize default groups
   useEffect(() => {
     if (isSignedIn && user && isInitialized && groups.length === 0) {
       const defaultGroups: Group[] = [
@@ -227,7 +222,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   }, [isSignedIn, user, isInitialized, groups.length]);
 
-  // Initialize mock budgets and goals (Mantido o mesmo)
+  // Initialize mock budgets and goals
   useEffect(() => {
     if (isSignedIn && user && isInitialized && budgets.length === 0) {
       const mockBudgets: Budget[] = [
@@ -285,7 +280,6 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Load data with better auth handling
   useEffect(() => {
     const loadData = async () => {
-      // Agora dependemos de `isInitialized` para garantir que o Supabase já está configurado
       if (!isInitialized || !isSignedIn || !user) {
         console.log('🔄 Skipping data load - not ready:', { isSignedIn, user: !!user, isInitialized });
         return;
@@ -294,11 +288,6 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       console.log('📊 Loading data for user:', user.id);
 
       try {
-        // A sessão do Supabase já deveria estar configurada pelo ensureSupabaseAuth inicial
-        // Não precisamos de supabase.auth.getUser() aqui, pois já foi feito no ensureSupabaseAuth
-        // (a menos que você queira validar novamente, mas isso pode ser redundante e custoso)
-        // Se `ensureSupabaseAuth` falhar, `isInitialized` será `false`.
-
         // Load transactions
         setLoading(prev => ({ ...prev, transactions: true }));
         try {
@@ -307,7 +296,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           console.log('✅ Loaded transactions:', transactionsData.length);
         } catch (error) {
           console.warn('⚠️ Failed to load transactions:', error);
-          setTransactions([]); // Set empty array on error
+          setTransactions([]);
+        } finally {
+          setLoading(prev => ({ ...prev, transactions: false }));
         }
         
         // Load categories
@@ -318,7 +309,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           console.log('✅ Loaded categories:', categoriesData.length);
         } catch (error) {
           console.warn('⚠️ Failed to load categories:', error);
-          setCategories([]); // Set empty array on error
+          setCategories([]);
+        } finally {
+          setLoading(prev => ({ ...prev, categories: false }));
         }
         
         // Load payables
@@ -329,26 +322,19 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           console.log('✅ Loaded payables:', payablesData.length);
         } catch (error) {
           console.warn('⚠️ Failed to load payables:', error);
-          setPayables([]); // Set empty array on error
+          setPayables([]);
+        } finally {
+          setLoading(prev => ({ ...prev, payables: false }));
         }
         
       } catch (error) {
         console.error('❌ Error in loadData:', error);
         handleError(error, 'carregamento de dados');
-      } finally {
-        setLoading({
-          transactions: false,
-          categories: false,
-          payables: false,
-          groups: false,
-          budgets: false,
-          goals: false
-        });
       }
     };
 
     loadData();
-  }, [isInitialized, isSignedIn, user, ensureSupabaseAuth]); // Adicione ensureSupabaseAuth como dependência
+  }, [isInitialized, isSignedIn, user]);
 
   // Enhanced transaction CRUD with better auth handling
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
@@ -358,13 +344,12 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      // 1. Garante que a sessão Supabase está autenticada com o token mais recente do Clerk
+      // 1. Ensure Supabase auth is set up with the latest Clerk token
       await ensureSupabaseAuth(); 
       
       console.log('✅ Auth verified before transaction creation, user:', user.id);
       
       await withErrorHandling('create_transaction', async () => {
-        // user.id e user.emailAddresses[0]?.emailAddress já vêm do Clerk e podem ser passados
         const newTransaction = await dbCreateTransaction(transaction, user.id, user.emailAddresses[0]?.emailAddress);
         setTransactions(prev => [newTransaction, ...prev]);
         toast.success('Transação criada com sucesso!');
@@ -386,7 +371,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('update_transaction', async () => {
         const updatedTransaction = await dbUpdateTransaction(id, transaction, user.id);
         setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
@@ -410,7 +395,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('delete_transaction', async () => {
         await dbDeleteTransaction(id, user.id);
         setTransactions(prev => prev.filter(t => t.id !== id));
@@ -435,7 +420,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('create_category', async () => {
         const newCategory = await dbCreateCategory(category, user.id, user.emailAddresses[0]?.emailAddress);
         setCategories(prev => [newCategory, ...prev]);
@@ -458,7 +443,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('update_category', async () => {
         const updatedCategory = await dbUpdateCategory(id, category, user.id);
         setCategories(prev => prev.map(c => c.id === id ? updatedCategory : c));
@@ -482,7 +467,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('delete_category', async () => {
         await dbDeleteCategory(id, user.id);
         setCategories(prev => prev.filter(c => c.id !== id));
@@ -499,7 +484,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   };
 
-  // Group CRUD (continuam sendo mock, não precisam de ensureSupabaseAuth se não acessam o DB)
+  // Group CRUD (mock data)
   const addGroup = async (group: Omit<Group, 'id' | 'createdAt'>) => {
     const newGroup: Group = {
       ...group,
@@ -532,7 +517,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('create_payable', async () => {
         const newPayable = await dbCreatePayable(payable, user.id, user.emailAddresses[0]?.emailAddress);
         setPayables(prev => [newPayable, ...prev]);
@@ -555,7 +540,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('update_payable', async () => {
         const updatedPayable = await dbUpdatePayable(id, payable, user.id);
         setPayables(prev => prev.map(p => p.id === id ? updatedPayable : p));
@@ -579,7 +564,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
     
     try {
-      await ensureSupabaseAuth(); // Garante a autenticação Supabase
+      await ensureSupabaseAuth();
       await withErrorHandling('delete_payable', async () => {
         await dbDeletePayable(id, user.id);
         setPayables(prev => prev.filter(p => p.id !== id));
