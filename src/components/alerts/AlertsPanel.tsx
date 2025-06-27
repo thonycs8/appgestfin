@@ -31,11 +31,8 @@ export function AlertsPanel() {
   const { 
     alerts, 
     getUnreadCount, 
-    getAlertsByType, 
     getAlertsBySeverity,
-    markAsRead, 
-    markAllAsRead, 
-    deleteAlert 
+    markAllAsRead
   } = useAlerts();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,40 +47,6 @@ export function AlertsPanel() {
     
     return matchesSearch && matchesSeverity && matchesType;
   });
-
-  const getAlertTitle = (alert: Alert) => {
-    switch (alert.type) {
-      case 'payable_due':
-        return language === 'pt' ? 'Conta a Vencer' : 'Bill Due';
-      case 'payable_overdue':
-        return language === 'pt' ? 'Conta Vencida' : 'Overdue Bill';
-      case 'investment_yield':
-        return language === 'pt' ? 'Investimento Rendendo' : 'Investment Yield';
-      case 'budget_limit':
-        return language === 'pt' ? 'Orçamento no Limite' : 'Budget Limit';
-      case 'goal_deadline':
-        return language === 'pt' ? 'Meta Próxima do Prazo' : 'Goal Deadline';
-      case 'low_balance':
-        return language === 'pt' ? 'Saldo Baixo' : 'Low Balance';
-      default:
-        return alert.title;
-    }
-  };
-
-  const getSeverityText = (severity: Alert['severity']) => {
-    switch (severity) {
-      case 'low':
-        return language === 'pt' ? 'Baixa' : 'Low';
-      case 'medium':
-        return language === 'pt' ? 'Média' : 'Medium';
-      case 'high':
-        return language === 'pt' ? 'Alta' : 'High';
-      case 'critical':
-        return language === 'pt' ? 'Crítica' : 'Critical';
-      default:
-        return severity;
-    }
-  };
 
   const criticalAlerts = getAlertsBySeverity('critical');
   const highAlerts = getAlertsBySeverity('high');

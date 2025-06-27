@@ -1,6 +1,5 @@
 import { useAuth } from '@clerk/clerk-react';
 import { ReactNode, useEffect } from 'react';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ProtectedRouteProps {
   children: ReactNode;
