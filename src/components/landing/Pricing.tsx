@@ -83,7 +83,7 @@ export function Pricing() {
           </Card>
 
           {/* Stripe Products */}
-          {stripeProducts.map((product, index) => {
+          {stripeProducts.map((product) => {
             const isPopular = product.name === 'GestFin Profissional';
             
             return (

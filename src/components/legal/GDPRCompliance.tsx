@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Shield, Download, Trash2, Eye, Edit, FileText } from 'lucide-react';
+import { Shield, Download, Trash2, Eye, Edit } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth, useUser } from '@clerk/clerk-react';
 

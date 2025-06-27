@@ -22,7 +22,7 @@ interface HeaderProps {
 export function Header({ title }: HeaderProps) {
   const { user } = useUser();
   const { isSignedIn, getToken } = useAuth();
-  const { language, setLanguage, t } = useApp();
+  const { language, setLanguage } = useApp();
   const [subscription, setSubscription] = useState<any>(null);
 
   useEffect(() => {

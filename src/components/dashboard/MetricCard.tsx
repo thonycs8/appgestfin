@@ -1,11 +1,10 @@
-import { DivideIcon as LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface MetricCardProps {
   title: string;
   value: string;
   change: number;
-  icon: LucideIcon;
+  icon: React.ElementType;
   color: 'green' | 'red' | 'blue' | 'purple';
 }
 
