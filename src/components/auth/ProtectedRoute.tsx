@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { ReactNode, useEffect } from 'react';
 
 interface ProtectedRouteProps {
@@ -7,7 +7,8 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { isLoaded, isSignedIn, user } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
 
   // Debug logging
   useEffect(() => {
