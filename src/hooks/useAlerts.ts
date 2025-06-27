@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Alert, Payable, Investment, Budget, FinancialGoal, Account, NotificationSettings } from '@/types';
+import { Alert, Investment, Budget, FinancialGoal, Account, NotificationSettings } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 
 export function useAlerts() {

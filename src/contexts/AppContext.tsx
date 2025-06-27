@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
 import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoal } from '@/types';
