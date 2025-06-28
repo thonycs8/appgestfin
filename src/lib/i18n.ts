@@ -78,7 +78,7 @@ export const translations = {
     expenseDescription: 'Descrição da despesa...',
 
     // Payables
-    overdue: 'Vencidas',
+    payablesOverdue: 'Vencidas',
     toPay: 'A Vencer',
     paid: 'Pagas',
     accounts: 'contas',
@@ -232,7 +232,7 @@ export const translations = {
     expenseDescription: 'Expense description...',
 
     // Payables
-    overdue: 'Overdue',
+    payablesOverdue: 'Overdue',
     toPay: 'To Pay',
     paid: 'Paid',
     accounts: 'accounts',
