@@ -3,7 +3,7 @@ import { Alert, NotificationSettings } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 
 export function useAlerts() {
-  const { payables, investments, transactions } = useApp();
+  const { payables, investments } = useApp();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     id: '1',

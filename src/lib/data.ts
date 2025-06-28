@@ -129,10 +129,58 @@ export const mockInvestments: Investment[] = [
 ];
 
 export const mockCategories: Category[] = [
-  { id: '1', name: 'Prestação de Serviços', type: 'income', category: 'empresa', color: '#22c55e' },
-  { id: '2', name: 'Vendas', type: 'income', category: 'empresa', color: '#16a34a' },
-  { id: '3', name: 'Salário', type: 'income', category: 'familia', color: '#15803d' },
-  { id: '4', name: 'Marketing', type: 'expense', category: 'empresa', color: '#ef4444' },
-  { id: '5', name: 'Software', type: 'expense', category: 'empresa', color: '#dc2626' },
-  { id: '6', name: 'Alimentação', type: 'expense', category: 'familia', color: '#b91c1c' }
+  { 
+    id: '1', 
+    name: 'Prestação de Serviços', 
+    type: 'income', 
+    color: '#22c55e',
+    userId: 'user1',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: '2', 
+    name: 'Vendas', 
+    type: 'income', 
+    color: '#16a34a',
+    userId: 'user1',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: '3', 
+    name: 'Salário', 
+    type: 'income', 
+    color: '#15803d',
+    userId: 'user1',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: '4', 
+    name: 'Marketing', 
+    type: 'expense', 
+    color: '#ef4444',
+    userId: 'user1',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: '5', 
+    name: 'Software', 
+    type: 'expense', 
+    color: '#dc2626',
+    userId: 'user1',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: '6', 
+    name: 'Alimentação', 
+    type: 'expense', 
+    color: '#b91c1c',
+    userId: 'user1',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  }
 ];
