@@ -37,24 +37,6 @@ async function ensureUserExists(userId: string, userEmail?: string) {
   }
 }
 
-// Helper function to verify authentication before operations
-async function verifyAuth(userId: string) {
-  try {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !authData.user) {
-      console.error('❌ Auth verification failed:', authError);
-      throw new Error('Authentication required');
-    }
-    
-    console.log('✅ Auth verified for operation, user:', authData.user.id);
-    return authData.user;
-  } catch (error) {
-    console.error('❌ Auth verification error:', error);
-    throw new Error('Authentication required');
-  }
-}
-
 // Transactions
 export async function createTransaction(
   transaction: Omit<Transaction, 'id'>,
