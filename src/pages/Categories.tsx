@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { useApp } from '@/contexts/AppContext';
@@ -126,6 +126,12 @@ export function Categories() {
                   <DialogTitle className="text-xl font-light text-black">
                     {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
                   </DialogTitle>
+                  <DialogDescription className="text-gray-600">
+                    {editingCategory 
+                      ? 'Edite as informações da categoria existente.'
+                      : 'Crie uma nova categoria para organizar suas transações.'
+                    }
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 pt-4">
                   <div>

@@ -139,8 +139,15 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
 
     try {
-      // Get the latest JWT token from Clerk
-      const token = await getToken({ template: 'supabase' });
+      // Try to get the Supabase token from Clerk
+      let token;
+      try {
+        token = await getToken({ template: 'supabase' });
+      } catch (tokenError) {
+        console.warn('⚠️ Failed to get Supabase token from Clerk, trying default token:', tokenError);
+        // Fallback to default token if Supabase template is not configured
+        token = await getToken();
+      }
       
       if (!token) {
         console.error('❌ No JWT token received from Clerk (ensureSupabaseAuth).');
