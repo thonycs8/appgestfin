@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { LandingPage } from '@/components/landing/LandingPage';
 import { Dashboard } from '@/pages/Dashboard';
-import { Calendar } from '@/pages/Calendar';
+import { Calendary } from '@/pages/Calendary';
 import { Income } from '@/pages/Income';
 import { Expenses } from '@/pages/Expenses';
 import { Payables } from '@/pages/Payables';
@@ -26,7 +26,7 @@ import './App.css';
 
 const pageComponents = {
   dashboard: Dashboard,
-  calendar: Calendar,
+  calendar: Calendary,
   income: Income,
   expenses: Expenses,
   cashflow: Dashboard, // Placeholder
