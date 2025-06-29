@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +26,7 @@ export function TransactionForm({
   onCancel, 
   isLoading = false 
 }: TransactionFormProps) {
-  const { categories, groups, addCategory, language } = useApp();
+  const { categories, groups, addCategory } = useApp();
   
   const [formData, setFormData] = useState({
     type,
@@ -330,7 +330,7 @@ export function TransactionForm({
             </Label>
             <Select 
               value={formData.status} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as 'pending' | 'completed' | 'cancelled' }))}
             >
               <SelectTrigger>
                 <SelectValue />
