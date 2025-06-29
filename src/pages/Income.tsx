@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, TrendingUp, Building2, Home, Download, Upload } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, TrendingUp, Building2, Home, Download } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
@@ -16,10 +16,8 @@ export function Income() {
     addTransaction, 
     updateTransaction, 
     deleteTransaction, 
-    getFinancialSummary,
     exportUserData,
-    loading,
-    language 
+    loading
   } = useApp();
   
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -94,8 +92,6 @@ export function Income() {
       console.error('Error exporting data:', error);
     }
   };
-
-  const getGroupById = (id: string) => groups.find(g => g.id === id);
 
   return (
     <div className="space-y-8">

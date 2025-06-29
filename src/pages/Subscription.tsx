@@ -6,7 +6,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@clerk/clerk-react';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
-import { Check, Crown, Loader2, TrendingUp, Users, Shield, Zap, BarChart3, Target } from 'lucide-react';
+import { Check, Crown, Loader2, TrendingUp, Users, Shield, BarChart3 } from 'lucide-react';
 import { stripeProducts } from '@/stripe-config';
 
 interface UserSubscription {
@@ -141,8 +141,6 @@ export function Subscription() {
   }
 
   const currentPlan = getCurrentPlan();
-  const isActive = subscription?.subscription_status === 'active';
-  const isFreeUser = !subscription || !subscription.price_id;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
