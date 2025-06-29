@@ -4,39 +4,43 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@clerk/clerk-react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '@/lib/supabase';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export function SubscriptionSuccess() {
   const { language } = useApp();
   const { getToken } = useAuth();
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSubscription = async () => {
       try {
         const token = await getToken({ template: 'supabase' });
         
-        if (token) {
-          supabase.auth.setSession({
-            access_token: token,
-            refresh_token: '',
-          });
-
-          const { data } = await supabase
-            .from('stripe_user_subscriptions')
-            .select('*')
-            .maybeSingle();
-
-          setSubscription(data);
+        if (!token) {
+          throw new Error('No authentication token available');
         }
+
+        supabase.auth.setSession({
+          access_token: token,
+          refresh_token: '',
+        });
+
+        const { data, error: fetchError } = await supabase
+          .from('stripe_user_subscriptions')
+          .select('*')
+          .maybeSingle();
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        setSubscription(data);
       } catch (error) {
         console.error('Error fetching subscription:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load subscription');
       } finally {
         setLoading(false);
       }
@@ -48,6 +52,34 @@ export function SubscriptionSuccess() {
   const handleContinue = () => {
     window.location.href = '/dashboard';
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <LoadingSpinner size="lg" text={language === 'pt' ? 'Carregando informações da assinatura...' : 'Loading subscription information...'} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl text-red-600">
+              {language === 'pt' ? 'Erro ao carregar assinatura' : 'Error loading subscription'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 text-center">
+            <p className="text-muted-foreground">{error}</p>
+            <Button onClick={handleContinue} className="w-full">
+              {language === 'pt' ? 'Continuar para o Dashboard' : 'Continue to Dashboard'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -70,7 +102,7 @@ export function SubscriptionSuccess() {
               }
             </p>
             
-            {!loading && subscription && (
+            {subscription && (
               <div className="p-4 bg-muted rounded-lg">
                 <p className="font-medium">
                   {language === 'pt' ? 'Plano Ativo' : 'Active Plan'}

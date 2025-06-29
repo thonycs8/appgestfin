@@ -5,12 +5,13 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if environment variables are properly configured
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.');
+  console.error('Missing Supabase environment variables. Please check your .env file and make sure you have connected to Supabase.');
 }
 
-console.log('🔧 Initializing Supabase client with URL:', supabaseUrl);
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(
+  supabaseUrl || '',
+  supabaseAnonKey || '', 
+  {
   auth: {
     autoRefreshToken: false, // Clerk handles token refresh
     persistSession: false,   // Don't persist sessions since Clerk manages auth

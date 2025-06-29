@@ -22,6 +22,7 @@ import { PrivacyPolicy } from '@/components/legal/PrivacyPolicy';
 import { GDPRCompliance } from '@/components/legal/GDPRCompliance';
 import { AppProvider, useApp } from '@/contexts/AppContext';
 import { Toaster } from '@/components/ui/toaster';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import './App.css';
 
 const pageComponents = {
@@ -167,10 +168,7 @@ function App() {
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Carregando..." />
       </div>
     );
   }
@@ -244,10 +242,7 @@ function AppContent({ activeTab, setActiveTab, user }: {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando dashboard...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Carregando dashboard..." />
       </div>
     );
   }
