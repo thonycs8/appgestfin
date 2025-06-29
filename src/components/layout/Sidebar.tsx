@@ -27,10 +27,10 @@ interface SidebarProps {
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { id: 'calendar', label: 'Calendário', icon: Calendar },
   { id: 'income', label: 'Entradas', icon: TrendingUp },
   { id: 'expenses', label: 'Despesas', icon: TrendingDown },
   { id: 'cashflow', label: 'Fluxo', icon: BarChart3 },
-  { id: 'calendar', label: 'Calendário', icon: Calendar },
   { id: 'categories', label: 'Categorias', icon: Tags },
   { id: 'payables', label: 'Contas a Pagar', icon: CreditCard },
   { id: 'investments', label: 'Investimentos', icon: PiggyBank },
