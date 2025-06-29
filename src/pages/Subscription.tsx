@@ -4,15 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@clerk/clerk-react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
 import { Check, Crown, Loader2, TrendingUp, Users, Shield, Zap, BarChart3, Target } from 'lucide-react';
 import { stripeProducts } from '@/stripe-config';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 interface UserSubscription {
   subscription_status: string;

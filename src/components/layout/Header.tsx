@@ -6,14 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth, useUser, SignOutButton } from '@clerk/clerk-react';
 import { useApp } from '@/contexts/AppContext';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { stripeProducts } from '@/stripe-config';
 import { AlertsDropdown } from '@/components/alerts/AlertsDropdown';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 interface HeaderProps {
   title: string;
