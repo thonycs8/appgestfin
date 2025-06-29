@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, Eye, EyeOff, TrendingUp, TrendingDown, Clock, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, TrendingUp, TrendingDown, Clock, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,7 +45,7 @@ export function Calendary() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [view, setView] = useState<'month' | 'week' | 'agenda'>('month');
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [filters, setFilters] = useState<CalendarFilters>({
+  const [filters, setFilters] = useState<CalendaryFilters>({
     showIncome: true,
     showExpenses: true,
     showPayables: true,
@@ -55,7 +55,7 @@ export function Calendary() {
   });
 
   // Generate calendary events from existing data
-  const calendaryEvents = useMemo(() => {
+  const calendarEvents = useMemo(() => {
     const events: CalendaryEvent[] = [];
 
     // Add transactions
@@ -163,7 +163,7 @@ export function Calendary() {
     setCurrentDate(new Date());
   };
 
-  const getEventTypeColor = (type: CalendarEvent['type']) => {
+  const getEventTypeColor = (type: CalendaryEvent['type']) => {
     switch (type) {
       case 'income': return 'bg-green-100 text-green-800 border-green-200';
       case 'expense': return 'bg-red-100 text-red-800 border-red-200';
@@ -174,7 +174,7 @@ export function Calendary() {
     }
   };
 
-  const getEventTypeIcon = (type: CalendarEvent['type']) => {
+  const getEventTypeIcon = (type: CalendaryEvent['type']) => {
     switch (type) {
       case 'income': return <TrendingUp className="h-3 w-3" />;
       case 'expense': return <TrendingDown className="h-3 w-3" />;
