@@ -20,7 +20,7 @@ import { Alerts } from '@/pages/Alerts';
 import { TermsOfService } from '@/components/legal/TermsOfService';
 import { PrivacyPolicy } from '@/components/legal/PrivacyPolicy';
 import { GDPRCompliance } from '@/components/legal/GDPRCompliance';
-import { AppProvider, useApp } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext';
 import { Toaster } from '@/components/ui/toaster';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import './App.css';
