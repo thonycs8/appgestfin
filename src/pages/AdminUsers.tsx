@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User } from '@/types';
 
 // Mock users data
@@ -226,7 +226,7 @@ export function AdminUsers() {
                 <div className="flex items-center space-x-4">
                   <Avatar>
                     <AvatarFallback className="bg-blue-100 text-blue-700">
-                      {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                      {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
