@@ -25,7 +25,7 @@ const colorOptions = [
 ];
 
 export function Categories() {
-  const { categories, addCategory, updateCategory, deleteCategory, t, transactions } = useApp();
+  const { categories, addCategory, updateCategory, deleteCategory, transactions } = useApp();
   
   const [newCategory, setNewCategory] = useState({
     name: '',
