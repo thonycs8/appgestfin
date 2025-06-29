@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/lib/i18n';
 
-interface CalendarEvent {
+interface CalendaryEvent {
   id: string;
   title: string;
   date: string;
@@ -23,7 +23,7 @@ interface CalendarEvent {
   description?: string;
 }
 
-interface CalendarFilters {
+interface CalendaryFilters {
   showIncome: boolean;
   showExpenses: boolean;
   showPayables: boolean;
@@ -39,7 +39,7 @@ const monthNames = [
 
 const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-export function Calendar() {
+export function Calendary() {
   const { transactions, payables, goals, groups, language } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -54,9 +54,9 @@ export function Calendar() {
     categoryFilter: 'all'
   });
 
-  // Generate calendar events from existing data
-  const calendarEvents = useMemo(() => {
-    const events: CalendarEvent[] = [];
+  // Generate calendary events from existing data
+  const calendaryEvents = useMemo(() => {
+    const events: CalendaryEvent[] = [];
 
     // Add transactions
     transactions.forEach(transaction => {
