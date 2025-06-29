@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Transaction, Category, Payable } from '@/types';
+import { Transaction, Category } from '@/types';
 import { AuthError } from './auth';
 
 export interface DatabaseResponse<T> {

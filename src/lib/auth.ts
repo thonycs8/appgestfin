@@ -76,7 +76,6 @@ export function useAuthUser() {
         last_sign_in_at: new Date().toISOString(),
         metadata: {
           clerk_metadata: user.publicMetadata,
-          private_metadata: user.privateMetadata,
           unsafe_metadata: user.unsafeMetadata,
         },
       };
