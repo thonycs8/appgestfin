@@ -175,22 +175,20 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <div className="min-h-screen bg-white">
-          <SignedOut>
-            <LandingPage />
-          </SignedOut>
+      <div className="min-h-screen bg-white">
+        <SignedOut>
+          <LandingPage />
+        </SignedOut>
 
-          <SignedIn>
-            <AppContent 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab}
-              user={user}
-            />
-          </SignedIn>
-          <Toaster />
-        </div>
-      </AppProvider>
+        <SignedIn>
+          <AppContent 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab}
+            user={user}
+          />
+        </SignedIn>
+        <Toaster />
+      </div>
     </ErrorBoundary>
   );
 }
