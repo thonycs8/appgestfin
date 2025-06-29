@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Tags,
-  CreditCard,
-  PiggyBank,
-  Settings,
-  Menu,
-  X,
-  Building2,
-  Users,
-  Shield,
-  Crown,
-  Bell,
+  TrendingUp, 
+  TrendingDown, 
+  BarChart3, 
+  Tags, 
+  CreditCard, 
+  PiggyBank, 
+  Settings, 
+  Menu, 
+  X, 
+  Building2, 
+  Users, 
+  Shield, 
+  Crown, 
+  Bell, 
   Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,10 +27,10 @@ interface SidebarProps {
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-  { id: 'calendar', label: 'Calendário', icon: Calendar },
   { id: 'income', label: 'Entradas', icon: TrendingUp },
   { id: 'expenses', label: 'Despesas', icon: TrendingDown },
   { id: 'cashflow', label: 'Fluxo', icon: BarChart3 },
+  { id: 'calendar', label: 'Calendário', icon: Calendar },
   { id: 'categories', label: 'Categorias', icon: Tags },
   { id: 'payables', label: 'Contas a Pagar', icon: CreditCard },
   { id: 'investments', label: 'Investimentos', icon: PiggyBank },
