@@ -4,9 +4,43 @@
 ✅ **Aplicação implantada**: https://gestfin.netlify.app  
 ✅ **Código fonte completo**  
 ✅ **Banco de dados estruturado**  
-⏳ **Configurações de serviços externos**
+⚠️ **Configurações de serviços externos** - REQUER ATENÇÃO
 
-## 📋 Próximos Passos
+## 🔧 CORREÇÃO URGENTE - Erro do Clerk
+
+### ❌ Problema Atual
+A aplicação está apresentando erro de inicialização do Clerk. Isso acontece quando:
+1. A chave do Clerk não é válida
+2. O domínio não está configurado corretamente no Clerk
+3. A chave está incorreta no arquivo `.env`
+
+### ✅ Solução Imediata
+
+#### 1. Verificar/Obter Nova Chave do Clerk
+1. **Acesse**: https://dashboard.clerk.com
+2. **Vá para**: API Keys
+3. **Copie a Publishable Key** (deve começar com `pk_test_` ou `pk_live_`)
+4. **Substitua no arquivo `.env`**:
+   ```
+   VITE_CLERK_PUBLISHABLE_KEY=sua_nova_chave_aqui
+   ```
+
+#### 2. Configurar Domínios no Clerk
+1. **No painel do Clerk**, vá para **Settings** → **Domains**
+2. **Adicione os domínios**:
+   - Development: `http://localhost:5173`
+   - Production: `https://gestfin.netlify.app`
+3. **Salve as configurações**
+
+#### 3. Verificar Configuração
+Após as alterações:
+1. **Reinicie o servidor de desenvolvimento**
+2. **Limpe o cache do navegador**
+3. **Teste o acesso à aplicação**
+
+---
+
+## 📋 Configuração Completa dos Serviços
 
 ### 1. Configurar Supabase
 
@@ -22,14 +56,18 @@
    # Faça upload das funções em /supabase/functions/
    ```
 
-### 2. Configurar Clerk (Autenticação)
+### 2. Configurar Clerk (Autenticação) - CRÍTICO
 
 1. **Acesse**: https://clerk.com
 2. **Crie uma nova aplicação**
-3. **Configure os domínios**:
+3. **Configure os domínios** (OBRIGATÓRIO):
    - Development: `http://localhost:5173`
    - Production: `https://gestfin.netlify.app`
-4. **Copie a Publishable Key**
+4. **Copie a Publishable Key** (pk_test_...)
+5. **Atualize o arquivo `.env`**:
+   ```
+   VITE_CLERK_PUBLISHABLE_KEY=pk_test_sua_chave_real_aqui
+   ```
 
 ### 3. Configurar Stripe (Pagamentos)
 
@@ -47,7 +85,7 @@
 2. **Vá para**: Site settings → Environment variables
 3. **Adicione**:
    ```
-   VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+   VITE_CLERK_PUBLISHABLE_KEY=pk_test_sua_chave_real_aqui
    VITE_SUPABASE_URL=https://your-project-id.supabase.co
    VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
    ```
@@ -65,7 +103,8 @@
 
 Após as configurações, teste:
 
-### ✅ Autenticação
+### ✅ Autenticação (PRIORIDADE)
+- [ ] Carregamento da página sem erros
 - [ ] Registro de novo usuário
 - [ ] Login/Logout
 - [ ] Proteção de rotas
@@ -139,19 +178,36 @@ Após as configurações, teste:
 
 ## 💡 Dicas Importantes
 
-1. **Teste em ambiente local primeiro** antes de configurar produção
-2. **Use chaves de teste** do Stripe durante desenvolvimento
-3. **Configure webhooks** para sincronização automática
-4. **Monitore logs** no Supabase e Netlify para debug
+1. **SEMPRE use chaves reais** do Clerk - chaves de exemplo não funcionam
+2. **Configure domínios** no Clerk antes de testar
+3. **Teste em ambiente local primeiro** antes de configurar produção
+4. **Use chaves de teste** do Stripe durante desenvolvimento
+5. **Configure webhooks** para sincronização automática
+6. **Monitore logs** no Supabase e Netlify para debug
 
 ## 🆘 Suporte
 
 Se encontrar problemas:
-1. Verifique os logs no console do navegador
-2. Confirme as variáveis de ambiente
-3. Teste a conectividade com os serviços
-4. Verifique as permissões RLS no Supabase
+1. **Verifique os logs** no console do navegador
+2. **Confirme as variáveis de ambiente** estão corretas
+3. **Teste a conectividade** com os serviços
+4. **Verifique as permissões RLS** no Supabase
+5. **Confirme os domínios** no Clerk
+
+## ⚠️ Problemas Comuns
+
+### Erro de Clerk (Atual)
+- **Causa**: Chave inválida ou domínio não configurado
+- **Solução**: Seguir os passos da "Correção Urgente" acima
+
+### Erro de Supabase
+- **Causa**: URL ou chave incorreta
+- **Solução**: Verificar credenciais no painel do Supabase
+
+### Erro de Stripe
+- **Causa**: Webhook não configurado
+- **Solução**: Configurar endpoint no dashboard do Stripe
 
 ---
 
-**🎉 Sua aplicação está pronta para produção!**
+**🎉 Sua aplicação estará pronta após corrigir o Clerk!**
