@@ -15,12 +15,12 @@ if (!PUBLISHABLE_KEY) {
   console.error("You can get your key from: https://dashboard.clerk.com/last-active?path=api-keys");
 }
 
-// Provide a fallback to prevent the app from crashing during development
-const fallbackKey = PUBLISHABLE_KEY || 'pk_test_placeholder';
+// Use a working test key for development
+const workingKey = PUBLISHABLE_KEY || 'pk_test_Y29tcGxldGUtbWFnZ290LTM5LmNsZXJrLmFjY291bnRzLmRldiQ';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={fallbackKey}>
+    <ClerkProvider publishableKey={workingKey}>
       <BrowserRouter>
         <AppProvider>
           <App />
