@@ -20,7 +20,7 @@ A aplicação está apresentando erro de inicialização do Clerk. Isso acontece
 1. **Acesse**: https://dashboard.clerk.com
 2. **Vá para**: API Keys
 3. **Copie a Publishable Key** (deve começar com `pk_test_` ou `pk_live_`)
-4. **Substitua no arquivo `.env`**:
+4. **Crie um arquivo `.env` baseado no `.env.example` e adicione sua chave**:
    ```
    VITE_CLERK_PUBLISHABLE_KEY=sua_nova_chave_aqui
    ```

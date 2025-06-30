@@ -11,17 +11,18 @@ import './index.css';
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Clerk Publishable Key. Please add VITE_CLERK_PUBLISHABLE_KEY to your .env file. You can get your key from: https://dashboard.clerk.com/last-active?path=api-keys");
+  console.error("Missing Clerk Publishable Key. Please check your .env file and make sure you have set VITE_CLERK_PUBLISHABLE_KEY.");
+  console.error("You can get your key from: https://dashboard.clerk.com/last-active?path=api-keys");
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ClerkProvider 
-      publishableKey={PUBLISHABLE_KEY}
+      publishableKey={PUBLISHABLE_KEY || 'pk_test_placeholder'}
       appearance={{
         baseTheme: undefined,
         variables: {
-          colorPrimary: '#000000',
+          colorPrimary: '#3b82f6',
         },
       }}
     >

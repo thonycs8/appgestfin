@@ -5,6 +5,7 @@ import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoa
 import { useAuthUser } from '@/lib/auth';
 import { databaseService, TransactionFilters, PaginationOptions } from '@/lib/database-enhanced';
 import { toast } from 'sonner';
+import { mockCategories, mockTransactions, mockPayables, mockInvestments } from '@/lib/data';
 
 interface AppContextType {
   language: Language;
@@ -93,6 +94,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Error state
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isMockMode, setIsMockMode] = useState(false);
 
   const t = (key: TranslationKey): string => {
     return translations[language][key] || key;
@@ -134,7 +136,14 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         
         if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
           console.warn('⚠️ Supabase not configured, running in mock mode');
+          setIsMockMode(true);
           setIsInitialized(true);
+          
+          // Load mock data in mock mode
+          setTransactions(mockTransactions);
+          setCategories(mockCategories);
+          setPayables(mockPayables);
+          setInvestments(mockInvestments);
           return;
         }
         
@@ -146,7 +155,14 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         console.error('❌ Error during authentication initialization:', error);
         // Don't throw error, just log warning and continue in mock mode
         console.warn('⚠️ Continuing in mock mode due to auth error');
+        setIsMockMode(true);
         setIsInitialized(true);
+        
+        // Load mock data in mock mode
+        setTransactions(mockTransactions);
+        setCategories(mockCategories);
+        setPayables(mockPayables);
+        setInvestments(mockInvestments);
       }
     };
 
@@ -236,7 +252,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     try {
       // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
         // Mock mode - add to local state
         const newTransaction: Transaction = {
           ...transaction,
@@ -265,7 +281,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     try {
       // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
         // Mock mode - update local state
         setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
         toast.success('Transação atualizada com sucesso! (Modo demonstração)');
@@ -289,7 +305,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     try {
       // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
         // Mock mode - remove from local state
         setTransactions(prev => prev.filter(t => t.id !== id));
         toast.success('Transação excluída com sucesso! (Modo demonstração)');
@@ -315,7 +331,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     
     // Check if Supabase is configured
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+    if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
       console.log('Mock mode: No categories to load');
       return;
     }
@@ -339,7 +355,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     try {
       // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
         // Mock mode - add to local state
         const newCategory: Category = {
           ...category,
@@ -398,7 +414,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     try {
       // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
         // Mock mode - calculate from local data
         const summary = {
           totalIncome: transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
@@ -422,11 +438,12 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   };
 
+  // Backup de dados do usuário
   const exportUserData = async () => {
     try {
       // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
         // Mock mode - export local data
         const exportData = {
           exportDate: new Date().toISOString(),
