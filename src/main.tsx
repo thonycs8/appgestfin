@@ -10,8 +10,12 @@ import './index.css';
 // Import your publishable key
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-// Error component for missing Clerk key
-const ClerkKeyError = () => (
+// Check if the key is valid (starts with pk_test_ or pk_live_)
+const isValidClerkKey = PUBLISHABLE_KEY && 
+  (PUBLISHABLE_KEY.startsWith('pk_test_') || PUBLISHABLE_KEY.startsWith('pk_live_'));
+
+// Error component for missing or invalid Clerk key
+const ClerkConfigError = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
     <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
       <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -67,14 +71,14 @@ const ClerkKeyError = () => (
 );
 
 // Only render the app if we have a valid Clerk key
-if (!PUBLISHABLE_KEY || PUBLISHABLE_KEY === 'pk_test_placeholder') {
+if (!isValidClerkKey) {
   console.error("Missing or invalid Clerk Publishable Key.");
   console.error("Please check your .env file and make sure you have set VITE_CLERK_PUBLISHABLE_KEY.");
   console.error("You can get your key from: https://dashboard.clerk.com/last-active?path=api-keys");
   
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <ClerkKeyError />
+      <ClerkConfigError />
     </React.StrictMode>
   );
 } else {
@@ -87,6 +91,15 @@ if (!PUBLISHABLE_KEY || PUBLISHABLE_KEY === 'pk_test_placeholder') {
           variables: {
             colorPrimary: '#3b82f6',
           },
+          elements: {
+            formButtonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white',
+            card: 'shadow-lg rounded-lg border border-gray-200',
+            headerTitle: 'text-xl font-semibold text-gray-900',
+            headerSubtitle: 'text-gray-600',
+            socialButtonsIconButton: 'border border-gray-300 hover:bg-gray-50',
+            formFieldLabel: 'text-gray-700 font-medium',
+            formFieldInput: 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md',
+          }
         }}
       >
         <BrowserRouter>
