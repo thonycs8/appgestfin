@@ -5,24 +5,29 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if environment variables are properly configured
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file and make sure you have connected to Supabase.');
+  console.warn('Supabase environment variables not configured. Using mock mode.');
 }
 
+// Use placeholder values if environment variables are not set
+const defaultUrl = 'https://placeholder.supabase.co';
+const defaultKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.placeholder';
+
 export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || '', 
+  supabaseUrl || defaultUrl,
+  supabaseAnonKey || defaultKey, 
   {
-  auth: {
-    autoRefreshToken: false, // Clerk handles token refresh
-    persistSession: false,   // Don't persist sessions since Clerk manages auth
-    detectSessionInUrl: false // Don't detect sessions from URL
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'gestfin-app'
+    auth: {
+      autoRefreshToken: false, // Clerk handles token refresh
+      persistSession: false,   // Don't persist sessions since Clerk manages auth
+      detectSessionInUrl: false // Don't detect sessions from URL
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'gestfin-app'
+      }
     }
   }
-});
+);
 
 // Rate limiting configuration
 export const RATE_LIMITS = {

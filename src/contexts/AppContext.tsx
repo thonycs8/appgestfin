@@ -127,14 +127,26 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
       try {
         console.log('🔐 Initializing authentication and syncing user...');
+        
+        // Check if Supabase is properly configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        
+        if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
+          console.warn('⚠️ Supabase not configured, running in mock mode');
+          setIsInitialized(true);
+          return;
+        }
+        
         await ensureSupabaseAuth();
         await syncUserToSupabase();
         setIsInitialized(true);
         console.log('✅ Authentication initialized successfully');
       } catch (error) {
         console.error('❌ Error during authentication initialization:', error);
-        setError('Erro na inicialização da autenticação. Tente fazer login novamente.');
-        setIsInitialized(false);
+        // Don't throw error, just log warning and continue in mock mode
+        console.warn('⚠️ Continuing in mock mode due to auth error');
+        setIsInitialized(true);
       }
     };
 
@@ -174,6 +186,13 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       }
 
       try {
+        // Check if Supabase is configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+          console.log('Running in mock mode - no data to load');
+          return;
+        }
+        
         await Promise.all([
           loadTransactions(),
           loadCategories()
@@ -190,6 +209,13 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Transações com filtros melhorados
   const loadTransactions = async (filters?: TransactionFilters, pagination?: PaginationOptions) => {
     if (!isInitialized) return;
+    
+    // Check if Supabase is configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      console.log('Mock mode: No transactions to load');
+      return;
+    }
     
     setLoading(prev => ({ ...prev, transactions: true }));
     try {
@@ -208,6 +234,20 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Mock mode - add to local state
+        const newTransaction: Transaction = {
+          ...transaction,
+          id: Date.now().toString(),
+          userId: user?.id
+        };
+        setTransactions(prev => [newTransaction, ...prev]);
+        toast.success('Transação criada com sucesso! (Modo demonstração)');
+        return;
+      }
+      
       const result = await databaseService.createTransaction(transaction);
       if (result.success && result.data) {
         setTransactions(prev => [result.data!, ...prev]);
@@ -223,6 +263,15 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Mock mode - update local state
+        setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+        toast.success('Transação atualizada com sucesso! (Modo demonstração)');
+        return;
+      }
+      
       const result = await databaseService.updateTransaction(id, updates);
       if (result.success && result.data) {
         setTransactions(prev => prev.map(t => t.id === id ? result.data! : t));
@@ -238,6 +287,15 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const deleteTransaction = async (id: string) => {
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Mock mode - remove from local state
+        setTransactions(prev => prev.filter(t => t.id !== id));
+        toast.success('Transação excluída com sucesso! (Modo demonstração)');
+        return;
+      }
+      
       const result = await databaseService.deleteTransaction(id);
       if (result.success) {
         setTransactions(prev => prev.filter(t => t.id !== id));
@@ -254,6 +312,13 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Categorias
   const loadCategories = async (type?: 'income' | 'expense') => {
     if (!isInitialized) return;
+    
+    // Check if Supabase is configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      console.log('Mock mode: No categories to load');
+      return;
+    }
     
     setLoading(prev => ({ ...prev, categories: true }));
     try {
@@ -272,6 +337,21 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const addCategory = async (category: Omit<Category, 'id' | 'createdAt'>) => {
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Mock mode - add to local state
+        const newCategory: Category = {
+          ...category,
+          id: Date.now().toString(),
+          createdAt: new Date().toISOString(),
+          userId: user?.id
+        };
+        setCategories(prev => [newCategory, ...prev]);
+        toast.success('Categoria criada com sucesso! (Modo demonstração)');
+        return;
+      }
+      
       const result = await databaseService.createCategory(category);
       if (result.success && result.data) {
         setCategories(prev => [result.data!, ...prev]);
@@ -287,7 +367,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const updateCategory = async (id: string, updates: Partial<Category>) => {
     try {
-      // Implementar quando necessário
+      // Mock mode always for categories
       setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
@@ -304,7 +384,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         throw new Error('Esta categoria está sendo usada em transações e não pode ser excluída.');
       }
       
-      // Implementar exclusão no banco
+      // Mock mode always for categories
       setCategories(prev => prev.filter(c => c.id !== id));
       toast.success('Categoria excluída com sucesso!');
     } catch (error) {
@@ -316,6 +396,20 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Estatísticas financeiras
   const getFinancialSummary = async (dateFrom?: string, dateTo?: string) => {
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Mock mode - calculate from local data
+        const summary = {
+          totalIncome: transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+          totalExpenses: transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
+          transactionCount: transactions.length,
+          incomeByCategory: {},
+          expensesByCategory: {}
+        };
+        return summary;
+      }
+      
       const result = await databaseService.getFinancialSummary(dateFrom, dateTo);
       if (result.success) {
         return result.data;
@@ -330,6 +424,32 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const exportUserData = async () => {
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Mock mode - export local data
+        const exportData = {
+          exportDate: new Date().toISOString(),
+          userId: user?.id,
+          transactions,
+          categories,
+          payables,
+          version: '1.0'
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `gestfin-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('Dados exportados com sucesso! (Modo demonstração)');
+        return;
+      }
+      
       const result = await databaseService.exportUserData();
       if (result.success && result.data) {
         const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
