@@ -1,4 +1,5 @@
 import { useAuth, useUser } from '@clerk/clerk-react';
+import { useCallback } from 'react';
 import { supabase } from './supabase';
 
 export interface AuthUser {
@@ -27,7 +28,7 @@ export function useAuthUser() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
 
-  const ensureSupabaseAuth = async () => {
+  const ensureSupabaseAuth = useCallback(async () => {
     if (!isSignedIn || !user) {
       throw new AuthError('User not authenticated', 'NOT_AUTHENTICATED');
     }
@@ -52,9 +53,9 @@ export function useAuthUser() {
       if (error instanceof AuthError) throw error;
       throw new AuthError('Authentication setup failed', 'SETUP_ERROR');
     }
-  };
+  }, [isSignedIn, user, getToken]);
 
-  const syncUserToSupabase = async () => {
+  const syncUserToSupabase = useCallback(async () => {
     if (!isSignedIn || !user) return;
 
     try {
@@ -94,9 +95,9 @@ export function useAuthUser() {
       console.error('Error in syncUserToSupabase:', error);
       throw error;
     }
-  };
+  }, [isSignedIn, user, ensureSupabaseAuth]);
 
-  const getAuthUser = async (): Promise<AuthUser | null> => {
+  const getAuthUser = useCallback(async (): Promise<AuthUser | null> => {
     if (!isSignedIn || !user) return null;
 
     try {
@@ -134,9 +135,9 @@ export function useAuthUser() {
       console.error('Error getting auth user:', error);
       return null;
     }
-  };
+  }, [isSignedIn, user, ensureSupabaseAuth, syncUserToSupabase]);
 
-  const updateUserRole = async (userId: string, role: 'user' | 'admin' | 'manager') => {
+  const updateUserRole = useCallback(async (userId: string, role: 'user' | 'admin' | 'manager') => {
     try {
       await ensureSupabaseAuth();
 
@@ -152,9 +153,9 @@ export function useAuthUser() {
       console.error('Error updating user role:', error);
       throw error;
     }
-  };
+  }, [ensureSupabaseAuth]);
 
-  const getUserStats = async () => {
+  const getUserStats = useCallback(async () => {
     try {
       await ensureSupabaseAuth();
 
@@ -170,7 +171,7 @@ export function useAuthUser() {
       console.error('Error getting user stats:', error);
       return null;
     }
-  };
+  }, [ensureSupabaseAuth]);
 
   return {
     isLoaded,
