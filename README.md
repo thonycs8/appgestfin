@@ -47,55 +47,7 @@ Uma aplicação completa de gestão financeira para empresas e famílias, desenv
 - **Deploy**: Netlify
 - **Gráficos**: Recharts
 
-## 📋 Configuração
 
-Veja o arquivo [SETUP.md](./SETUP.md) para instruções detalhadas de configuração.
-
-### Variáveis de Ambiente
-
-```env
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-## 🏃‍♂️ Desenvolvimento Local
-
-```bash
-# Instalar dependências
-npm install
-
-# Configurar variáveis de ambiente
-cp .env.example .env
-
-# Iniciar servidor de desenvolvimento
-npm run dev
-```
-
-## 📁 Estrutura do Projeto
-
-```
-src/
-├── components/          # Componentes reutilizáveis
-│   ├── ui/             # Componentes base (shadcn/ui)
-│   ├── layout/         # Layout e navegação
-│   ├── dashboard/      # Componentes do dashboard
-│   ├── alerts/         # Sistema de alertas
-│   └── landing/        # Página inicial
-├── pages/              # Páginas da aplicação
-├── hooks/              # Custom hooks
-├── lib/                # Utilitários e configurações
-├── contexts/           # Context providers
-└── types/              # Definições TypeScript
-```
-
-## 🔒 Segurança
-
-- ✅ Row Level Security (RLS) no Supabase
-- ✅ Autenticação JWT com Clerk
-- ✅ Validação de dados no frontend e backend
-- ✅ Criptografia de dados sensíveis
-- ✅ Conformidade GDPR
 
 ## 🌍 Internacionalização
 
