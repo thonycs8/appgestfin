@@ -12,12 +12,14 @@ const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 // Check if the key is valid (starts with pk_test_ or pk_live_)
 const isValidClerkKey = PUBLISHABLE_KEY && 
-  (PUBLISHABLE_KEY.startsWith('pk_test_') || PUBLISHABLE_KEY.startsWith('pk_live_'));
+  (PUBLISHABLE_KEY.startsWith('pk_test_') || PUBLISHABLE_KEY.startsWith('pk_live_')) &&
+  PUBLISHABLE_KEY.length > 20; // Ensure it's not just the prefix
 
 console.log('🔑 Clerk key validation:', { 
   hasKey: !!PUBLISHABLE_KEY, 
   isValid: isValidClerkKey,
-  keyPrefix: PUBLISHABLE_KEY?.substring(0, 10) + '...'
+  keyPrefix: PUBLISHABLE_KEY?.substring(0, 15) + '...',
+  keyLength: PUBLISHABLE_KEY?.length
 });
 
 // Error component for missing or invalid Clerk key
