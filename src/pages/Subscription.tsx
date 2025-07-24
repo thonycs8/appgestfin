@@ -6,8 +6,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@clerk/clerk-react';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
-import { Check, Crown, Loader2, TrendingUp, Users, Shield, BarChart3 } from 'lucide-react';
-import { stripeProducts } from '@/stripe-config';
+import { Check, Crown, Loader2, TrendingUp, Users, Shield, BarChart3, Star, Zap } from 'lucide-react';
+import { stripeProducts, getFreePlan, getPaidPlans } from '@/stripe-config';
 
 interface UserSubscription {
   subscription_status: string;
@@ -72,8 +72,8 @@ export function Subscription() {
   };
 
   const getCurrentPlan = () => {
-    if (!subscription?.price_id) return null;
-    return stripeProducts.find(product => product.priceId === subscription.price_id);
+    if (!subscription?.price_id) return getFreePlan();
+    return stripeProducts.find(product => product.priceId === subscription.price_id) || getFreePlan();
   };
 
   const handleSubscribe = async (priceId: string) => {
@@ -141,6 +141,8 @@ export function Subscription() {
   }
 
   const currentPlan = getCurrentPlan();
+  const freePlan = getFreePlan();
+  const paidPlans = getPaidPlans();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -153,27 +155,26 @@ export function Subscription() {
           </div>
           
           <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-            {language === 'pt' ? 'Desbloqueie todo o' : 'Unlock the full'}
+            {language === 'pt' ? 'Escolha o plano ideal' : 'Choose the perfect plan'}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-              {language === 'pt' ? ' potencial ' : ' potential '}
+              {language === 'pt' ? ' para você' : ' for you'}
             </span>
-            {language === 'pt' ? 'do Gestfin' : 'of Gestfin'}
           </h1>
           
           <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
             {language === 'pt' 
-              ? 'Transforme sua gestão financeira com recursos avançados, relatórios detalhados e suporte prioritário.'
-              : 'Transform your financial management with advanced features, detailed reports and priority support.'
+              ? 'Comece gratuitamente e evolua conforme suas necessidades crescem. Todos os planos incluem suporte e atualizações.'
+              : 'Start free and scale as your needs grow. All plans include support and updates.'
             }
           </p>
 
           {/* Current Plan Status */}
-          {subscription && (
+          {subscription && currentPlan && (
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-full">
               <Crown className="w-4 h-4" />
               <span className="font-medium">
                 {language === 'pt' ? 'Plano Atual: ' : 'Current Plan: '}
-                {currentPlan?.name || (language === 'pt' ? 'Gratuito' : 'Free')}
+                {currentPlan.name}
               </span>
               {subscription.current_period_end && (
                 <span className="text-sm">
@@ -234,17 +235,64 @@ export function Subscription() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
-          {stripeProducts.map((product) => {
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+          {/* Free Plan */}
+          {freePlan && (
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-300 bg-white border border-gray-200">
+              <CardHeader className="text-center space-y-4 pb-8">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-gray-900">{freePlan.name}</h3>
+                  <p className="text-gray-600">{freePlan.description}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-4xl font-bold text-gray-900">
+                      {formatPrice(freePlan.price, freePlan.currency)}
+                    </span>
+                    <span className="text-gray-600 ml-1">/mês</span>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                <ul className="space-y-3">
+                  {freePlan.features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-start">
+                      <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-600">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                
+                <div className="pt-4">
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                    disabled={currentPlan?.mode === 'free'}
+                  >
+                    {currentPlan?.mode === 'free' 
+                      ? (language === 'pt' ? 'Plano Atual' : 'Current Plan')
+                      : (language === 'pt' ? 'Começar Gratuitamente' : 'Start Free')
+                    }
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Paid Plans */}
+          {paidPlans.map((product) => {
             const isCurrentPlan = currentPlan?.id === product.id;
             const isLoadingThis = checkoutLoading === product.priceId;
-            const isPopular = product.name === 'GestFin Profissional';
+            const isPopular = product.popular;
             
             return (
               <Card key={product.id} className={`relative ${isPopular ? 'ring-2 ring-blue-500 shadow-2xl scale-105' : 'shadow-lg'} hover:shadow-xl transition-all duration-300`}>
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-blue-500 text-white px-4 py-1">
+                    <Badge className="bg-blue-500 text-white px-4 py-1 flex items-center gap-1">
+                      <Star className="w-3 h-3" />
                       {language === 'pt' ? 'Mais Popular' : 'Most Popular'}
                     </Badge>
                   </div>
@@ -261,12 +309,7 @@ export function Subscription() {
                 <CardHeader className="text-center space-y-4 pb-8">
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold text-foreground">{product.name}</h3>
-                    <p className="text-muted-foreground">
-                      {product.name === 'GestFin Profissional' 
-                        ? (language === 'pt' ? 'Ideal para pequenas empresas' : 'Ideal for small businesses')
-                        : (language === 'pt' ? 'Para empresas em crescimento' : 'For growing businesses')
-                      }
-                    </p>
+                    <p className="text-muted-foreground">{product.description}</p>
                   </div>
                   
                   <div className="space-y-1">
@@ -302,7 +345,7 @@ export function Subscription() {
                       {isLoadingThis && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {isCurrentPlan 
                         ? (language === 'pt' ? 'Plano Atual' : 'Current Plan')
-                        : (language === 'pt' ? 'Começar Agora' : 'Start Now')
+                        : (language === 'pt' ? 'Teste Grátis por 14 dias' : 'Start 14-day Free Trial')
                       }
                     </Button>
                   </div>
@@ -349,12 +392,11 @@ export function Subscription() {
                   </tr>
                   <tr>
                     <td className="py-4 px-4">{language === 'pt' ? 'Múltiplos usuários' : 'Multiple users'}</td>
-                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">1</td>
+                    <td className="text-center py-4 px-4">5</td>
                     <td className="text-center py-4 px-4">
                       <Check className="w-5 h-5 text-green-500 mx-auto" />
-                    </td>
-                    <td className="text-center py-4 px-4">
-                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                      <span className="text-sm">{language === 'pt' ? 'Ilimitados' : 'Unlimited'}</span>
                     </td>
                   </tr>
                   <tr>
@@ -371,6 +413,22 @@ export function Subscription() {
                     <td className="text-center py-4 px-4">
                       <Check className="w-5 h-5 text-green-500 mx-auto" />
                     </td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4">{language === 'pt' ? 'Relatórios customizados' : 'Custom reports'}</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4">{language === 'pt' ? 'Gerente de conta dedicado' : 'Dedicated account manager'}</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">-</td>
                     <td className="text-center py-4 px-4">
                       <Check className="w-5 h-5 text-green-500 mx-auto" />
                     </td>
@@ -445,6 +503,17 @@ export function Subscription() {
                     }
                   </p>
                 </div>
+                <div>
+                  <h4 className="font-semibold mb-2">
+                    {language === 'pt' ? 'O que acontece se eu exceder o limite do plano gratuito?' : 'What happens if I exceed the free plan limit?'}
+                  </h4>
+                  <p className="text-muted-foreground text-sm">
+                    {language === 'pt' 
+                      ? 'Você será notificado e poderá fazer upgrade para continuar adicionando transações.'
+                      : 'You will be notified and can upgrade to continue adding transactions.'
+                    }
+                  </p>
+                </div>
               </div>
               <div className="space-y-4">
                 <div>
@@ -469,10 +538,35 @@ export function Subscription() {
                     }
                   </p>
                 </div>
+                <div>
+                  <h4 className="font-semibold mb-2">
+                    {language === 'pt' ? 'Há desconto para pagamento anual?' : 'Is there a discount for annual payment?'}
+                  </h4>
+                  <p className="text-muted-foreground text-sm">
+                    {language === 'pt' 
+                      ? 'Entre em contato conosco para planos anuais com desconto especial.'
+                      : 'Contact us for annual plans with special discount.'
+                    }
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Bottom CTA */}
+        <div className="text-center mt-12">
+          <p className="text-gray-600 mb-4">
+            {language === 'pt' 
+              ? 'Todos os planos incluem 14 dias de teste grátis • Cancele a qualquer momento'
+              : 'All plans include 14-day free trial • Cancel anytime'
+            }
+          </p>
+          <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+            <Zap className="w-4 h-4 mr-2" />
+            {language === 'pt' ? 'Sem compromisso • Sem taxas de cancelamento' : 'No commitment • No cancellation fees'}
+          </div>
+        </div>
       </div>
     </div>
   );
