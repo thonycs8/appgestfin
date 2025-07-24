@@ -10,6 +10,7 @@ import { Loader2, Plus, X } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Transaction } from '@/types';
 import { formatCurrency } from '@/lib/i18n';
+import { AlertTriangle } from 'lucide-react';
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -26,7 +27,7 @@ export function TransactionForm({
   onCancel, 
   isLoading = false 
 }: TransactionFormProps) {
-  const { categories, groups, addCategory } = useApp();
+  const { categories, groups, addCategory, checkPlanLimits, getCurrentPlanLimits } = useApp();
   
   const [formData, setFormData] = useState({
     type,
@@ -73,6 +74,14 @@ export function TransactionForm({
       return;
     }
 
+    // Verificar limites do plano apenas para novas transações
+    if (!transaction) {
+      const canCreate = await checkPlanLimits('transaction');
+      if (!canCreate) {
+        return;
+      }
+    }
+
     try {
       await onSubmit({
         type: formData.type as 'income' | 'expense',
@@ -90,6 +99,12 @@ export function TransactionForm({
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
+
+    // Verificar limites do plano
+    const canCreate = await checkPlanLimits('category');
+    if (!canCreate) {
+      return;
+    }
 
     setIsCreatingCategory(true);
     try {
@@ -111,6 +126,7 @@ export function TransactionForm({
   };
 
   const getGroupById = (id: string) => groups.find(g => g.id === id);
+  const planLimits = getCurrentPlanLimits();
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -125,6 +141,23 @@ export function TransactionForm({
       </CardHeader>
       
       <CardContent>
+        {/* Plan Limits Warning */}
+        {!transaction && planLimits.transactions !== 'unlimited' && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Plano Gratuito: {transactions.length}/{planLimits.transactions} transações utilizadas
+              </span>
+            </div>
+            {transactions.length >= planLimits.transactions * 0.8 && (
+              <p className="text-xs text-yellow-700 mt-1">
+                Você está próximo do limite. Considere fazer upgrade para continuar.
+              </p>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Valor */}
           <div className="space-y-2">

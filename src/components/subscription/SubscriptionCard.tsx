@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Crown, Loader2 } from 'lucide-react';
-import { stripeProducts } from '@/stripe-config';
+import { Check, Crown, Loader2, Star } from 'lucide-react';
+import { stripeProducts, getFreePlan, getPaidPlans } from '@/stripe-config';
 import { useAuth } from '@clerk/clerk-react';
 import { useApp } from '@/contexts/AppContext';
 
@@ -34,8 +34,8 @@ export function SubscriptionCard({ userSubscription }: SubscriptionCardProps) {
   };
 
   const getCurrentPlan = () => {
-    if (!userSubscription?.price_id) return null;
-    return stripeProducts.find(product => product.priceId === userSubscription.price_id);
+    if (!userSubscription?.price_id) return getFreePlan();
+    return stripeProducts.find(product => product.priceId === userSubscription.price_id) || getFreePlan();
   };
 
   const handleSubscribe = async (priceId: string) => {
@@ -86,11 +86,13 @@ export function SubscriptionCard({ userSubscription }: SubscriptionCardProps) {
 
   const currentPlan = getCurrentPlan();
   const isActive = userSubscription?.subscription_status === 'active';
+  const freePlan = getFreePlan();
+  const paidPlans = getPaidPlans();
 
   return (
     <div className="space-y-6">
       {/* Current Subscription Status */}
-      {userSubscription && (
+      {userSubscription && currentPlan && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -101,11 +103,12 @@ export function SubscriptionCard({ userSubscription }: SubscriptionCardProps) {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold">
-                  {currentPlan?.name || (language === 'pt' ? 'Plano Desconhecido' : 'Unknown Plan')}
-                </h3>
+                <h3 className="text-lg font-semibold">{currentPlan.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {currentPlan && formatPrice(currentPlan.price, currentPlan.currency)}/mês
+                  {currentPlan.mode === 'free' 
+                    ? (language === 'pt' ? 'Plano gratuito' : 'Free plan')
+                    : `${formatPrice(currentPlan.price, currentPlan.currency)}/mês`
+                  }
                 </p>
               </div>
               <Badge variant={isActive ? 'default' : 'secondary'}>
@@ -130,49 +133,114 @@ export function SubscriptionCard({ userSubscription }: SubscriptionCardProps) {
       )}
 
       {/* Available Plans */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {stripeProducts.map((product) => {
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Free Plan */}
+        {freePlan && (
+          <Card className="shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardHeader className="text-center space-y-4 pb-8">
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-foreground">{freePlan.name}</h3>
+                <p className="text-muted-foreground">{freePlan.description}</p>
+              </div>
+              
+              <div className="space-y-1">
+                <div className="flex items-baseline justify-center">
+                  <span className="text-4xl font-bold text-foreground">
+                    {formatPrice(freePlan.price, freePlan.currency)}
+                  </span>
+                  <span className="text-muted-foreground ml-1">/mês</span>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-6">
+              <ul className="space-y-3">
+                {freePlan.features.map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-start">
+                    <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                disabled={currentPlan?.mode === 'free'}
+              >
+                {currentPlan?.mode === 'free' 
+                  ? (language === 'pt' ? 'Plano Atual' : 'Current Plan')
+                  : (language === 'pt' ? 'Começar Gratuitamente' : 'Start Free')
+                }
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Paid Plans */}
+        {paidPlans.map((product) => {
           const isCurrentPlan = currentPlan?.id === product.id;
           const isLoadingThis = loading === product.priceId;
+          const isPopular = product.popular;
           
           return (
-            <Card key={product.id} className={`relative ${isCurrentPlan ? 'ring-2 ring-blue-500' : ''}`}>
+            <Card key={product.id} className={`relative ${isPopular ? 'ring-2 ring-blue-500 shadow-2xl scale-105' : 'shadow-lg'} hover:shadow-xl transition-all duration-300`}>
+              {isPopular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-blue-500 text-white px-4 py-1 flex items-center gap-1">
+                    <Star className="w-3 h-3" />
+                    {language === 'pt' ? 'Mais Popular' : 'Most Popular'}
+                  </Badge>
+                </div>
+              )}
+
               {isCurrentPlan && (
                 <div className="absolute -top-2 -right-2">
-                  <Badge className="bg-blue-500 text-white">
+                  <Badge className="bg-green-500 text-white">
                     {language === 'pt' ? 'Atual' : 'Current'}
                   </Badge>
                 </div>
               )}
               
-              <CardHeader>
-                <CardTitle>{product.name}</CardTitle>
-                <div className="text-2xl font-bold">
-                  {formatPrice(product.price, product.currency)}
-                  <span className="text-sm font-normal text-muted-foreground">/mês</span>
+              <CardHeader className="text-center space-y-4 pb-8">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-foreground">{product.name}</h3>
+                  <p className="text-muted-foreground">{product.description}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-4xl font-bold text-foreground">
+                      {formatPrice(product.price, product.currency)}
+                    </span>
+                    <span className="text-muted-foreground ml-1">/mês</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {language === 'pt' ? '14 dias grátis' : '14 days free'}
+                  </p>
                 </div>
               </CardHeader>
               
-              <CardContent className="space-y-4">
-                <ul className="space-y-2">
-                  {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
+              <CardContent className="space-y-6">
+                <ul className="space-y-3">
+                  {product.features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-start">
+                      <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 
                 <Button 
-                  className="w-full" 
+                  className={`w-full ${isPopular ? 'bg-blue-600 hover:bg-blue-700' : ''}`} 
+                  variant={isCurrentPlan ? 'secondary' : (isPopular ? 'default' : 'outline')}
                   onClick={() => handleSubscribe(product.priceId)}
                   disabled={isCurrentPlan || isLoadingThis}
-                  variant={isCurrentPlan ? 'secondary' : 'default'}
                 >
                   {isLoadingThis && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isCurrentPlan 
                     ? (language === 'pt' ? 'Plano Atual' : 'Current Plan')
-                    : (language === 'pt' ? 'Assinar' : 'Subscribe')
+                    : (language === 'pt' ? 'Teste Grátis por 14 dias' : '14-day Free Trial')
                   }
                 </Button>
               </CardContent>

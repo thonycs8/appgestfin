@@ -5,6 +5,7 @@ import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoa
 import { useAuthUser } from '@/lib/auth';
 import { databaseService, TransactionFilters, PaginationOptions } from '@/lib/database-enhanced';
 import { toast } from 'sonner';
+import { getFreePlan } from '@/stripe-config';
 import { mockCategories, mockTransactions, mockPayables, mockInvestments } from '@/lib/data';
 
 interface AppContextType {
@@ -62,6 +63,9 @@ interface AppContextType {
   // Estado de erro
   error: string | null;
   clearError: () => void;
+  // Verificação de limites do plano
+  checkPlanLimits: (action: 'transaction' | 'category' | 'user') => Promise<boolean>;
+  getCurrentPlanLimits: () => any;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -95,6 +99,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMockMode, setIsMockMode] = useState(false);
+  const [userSubscription, setUserSubscription] = useState<any>(null);
 
   const t = (key: TranslationKey): string => {
     return translations[language][key] || key;
@@ -168,6 +173,31 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
     initializeAuth();
   }, [clerkLoaded, userLoaded, isSignedIn, user, ensureSupabaseAuth, syncUserToSupabase]);
+
+  // Carregar informações da assinatura
+  useEffect(() => {
+    const loadSubscription = async () => {
+      if (!isSignedIn || !user || !isInitialized) return;
+      
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (!token) return;
+
+        await ensureSupabaseAuth();
+        
+        const { data } = await supabase
+          .from('stripe_user_subscriptions')
+          .select('*')
+          .maybeSingle();
+
+        setUserSubscription(data);
+      } catch (error) {
+        console.error('Error loading subscription:', error);
+      }
+    };
+
+    loadSubscription();
+  }, [isSignedIn, user, isInitialized, getToken, ensureSupabaseAuth]);
 
   // Inicializar grupos padrão
   useEffect(() => {
@@ -487,6 +517,56 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     }
   };
 
+  // Verificação de limites do plano
+  const getCurrentPlanLimits = () => {
+    if (!userSubscription?.price_id) {
+      return getFreePlan()?.limits || { transactions: 25, users: 1, categories: 10 };
+    }
+    
+    const currentProduct = stripeProducts.find(p => p.priceId === userSubscription.price_id);
+    return currentProduct?.limits || { transactions: 25, users: 1, categories: 10 };
+  };
+
+  const checkPlanLimits = async (action: 'transaction' | 'category' | 'user') => {
+    const limits = getCurrentPlanLimits();
+    
+    switch (action) {
+      case 'transaction':
+        if (limits.transactions === 'unlimited') return true;
+        const transactionCount = transactions.length;
+        if (transactionCount >= limits.transactions) {
+          toast.error(
+            language === 'pt' 
+              ? `Limite de ${limits.transactions} transações atingido. Faça upgrade para continuar.`
+              : `Limit of ${limits.transactions} transactions reached. Upgrade to continue.`
+          );
+          return false;
+        }
+        return true;
+        
+      case 'category':
+        if (limits.categories === 'unlimited') return true;
+        const categoryCount = categories.length;
+        if (categoryCount >= limits.categories) {
+          toast.error(
+            language === 'pt' 
+              ? `Limite de ${limits.categories} categorias atingido. Faça upgrade para continuar.`
+              : `Limit of ${limits.categories} categories reached. Upgrade to continue.`
+          );
+          return false;
+        }
+        return true;
+        
+      case 'user':
+        if (limits.users === 'unlimited') return true;
+        // Implementar verificação de usuários quando necessário
+        return true;
+        
+      default:
+        return true;
+    }
+  };
+
   // Implementações mock para outras funcionalidades
   const addGroup = async (group: Omit<Group, 'id' | 'createdAt'>) => {
     const newGroup: Group = {
@@ -615,7 +695,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     getFinancialSummary,
     exportUserData,
     error,
-    clearError
+    clearError,
+    checkPlanLimits,
+    getCurrentPlanLimits
   };
 
   return (

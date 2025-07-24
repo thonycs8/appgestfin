@@ -17,7 +17,8 @@ export function Income() {
     updateTransaction, 
     deleteTransaction, 
     exportUserData,
-    loading
+    loading,
+    checkPlanLimits
   } = useApp();
   
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -40,6 +41,13 @@ export function Income() {
   const handleCreateIncome = async (transaction: Omit<Transaction, 'id'>) => {
     setIsSubmitting(true);
     try {
+      // Verificar limites do plano
+      const canCreate = await checkPlanLimits('transaction');
+      if (!canCreate) {
+        setIsSubmitting(false);
+        return;
+      }
+
       await addTransaction(transaction);
       setIsDialogOpen(false);
       setEditingTransaction(null);
