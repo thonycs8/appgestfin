@@ -30,26 +30,33 @@ export function useAuthUser() {
 
   const ensureSupabaseAuth = useCallback(async () => {
     if (!isSignedIn || !user) {
+      console.log('❌ ensureSupabaseAuth: User not authenticated');
       throw new AuthError('User not authenticated', 'NOT_AUTHENTICATED');
     }
 
     try {
+      console.log('🔑 Getting Supabase token...');
       const token = await getToken({ template: 'supabase' });
       if (!token) {
+        console.log('❌ No Supabase token received');
         throw new AuthError('Failed to get authentication token', 'TOKEN_ERROR');
       }
 
+      console.log('🔗 Setting Supabase session...');
       const { error } = await supabase.auth.setSession({
         access_token: token,
         refresh_token: '',
       });
 
       if (error) {
+        console.log('❌ Supabase session error:', error);
         throw new AuthError(`Supabase auth error: ${error.message}`, 'SUPABASE_ERROR');
       }
 
+      console.log('✅ Supabase authentication successful');
       return token;
     } catch (error) {
+      console.error('❌ ensureSupabaseAuth failed:', error);
       if (error instanceof AuthError) throw error;
       throw new AuthError('Authentication setup failed', 'SETUP_ERROR');
     }
@@ -59,6 +66,7 @@ export function useAuthUser() {
     if (!isSignedIn || !user) return;
 
     try {
+      console.log('👤 Syncing user to Supabase...', { userId: user.id, email: user.emailAddresses[0]?.emailAddress });
       await ensureSupabaseAuth();
 
       const userData = {
@@ -81,18 +89,20 @@ export function useAuthUser() {
         },
       };
 
+      console.log('💾 Upserting user data to Supabase...');
       const { error } = await supabase
         .from('users')
         .upsert(userData, { onConflict: 'id' });
 
       if (error) {
-        console.error('Error syncing user to Supabase:', error);
+        console.error('❌ Error syncing user to Supabase:', error);
         throw new AuthError('Failed to sync user data', 'SYNC_ERROR');
       }
 
+      console.log('✅ User synced to Supabase successfully');
       return userData;
     } catch (error) {
-      console.error('Error in syncUserToSupabase:', error);
+      console.error('❌ Error in syncUserToSupabase:', error);
       throw error;
     }
   }, [isSignedIn, user, ensureSupabaseAuth]);
@@ -101,6 +111,7 @@ export function useAuthUser() {
     if (!isSignedIn || !user) return null;
 
     try {
+      console.log('👤 Getting auth user data...');
       await ensureSupabaseAuth();
 
       const { data, error } = await supabase
@@ -112,12 +123,14 @@ export function useAuthUser() {
       if (error) {
         // Se o usuário não existe, sincronizar
         if (error.code === 'PGRST116') {
+          console.log('👤 User not found in database, syncing...');
           await syncUserToSupabase();
           return getAuthUser(); // Tentar novamente
         }
         throw new AuthError('Failed to get user data', 'USER_FETCH_ERROR');
       }
 
+      console.log('✅ Auth user data retrieved successfully');
       return {
         id: data.id,
         email: data.email,
@@ -132,7 +145,7 @@ export function useAuthUser() {
         lastSignInAt: data.last_sign_in_at,
       };
     } catch (error) {
-      console.error('Error getting auth user:', error);
+      console.error('❌ Error getting auth user:', error);
       return null;
     }
   }, [isSignedIn, user, ensureSupabaseAuth, syncUserToSupabase]);

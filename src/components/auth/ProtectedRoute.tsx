@@ -25,17 +25,21 @@ export function ProtectedRoute({
   useEffect(() => {
     const loadAuthUser = async () => {
       if (!isLoaded || !isSignedIn || !user) {
+        console.log('⏳ ProtectedRoute: Auth not ready', { isLoaded, isSignedIn, hasUser: !!user });
         setLoading(false);
         return;
       }
 
       try {
+        console.log('🔐 ProtectedRoute: Loading auth user data...');
         const userData = await getAuthUser();
         setAuthUser(userData);
+        console.log('✅ ProtectedRoute: Auth user loaded:', userData?.id);
       } catch (error) {
-        console.error('Error loading auth user:', error);
+        console.error('❌ ProtectedRoute: Error loading auth user:', error);
         setAuthUser(null);
       } finally {
+        console.log('🏁 ProtectedRoute: Loading complete');
         setLoading(false);
       }
     };
@@ -45,11 +49,13 @@ export function ProtectedRoute({
 
   // Loading state
   if (!isLoaded || loading) {
+    console.log('⏳ ProtectedRoute: Showing loading spinner');
     return fallback || <LoadingSpinner />;
   }
 
   // Not signed in
   if (!isSignedIn) {
+    console.log('❌ ProtectedRoute: User not signed in');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -68,6 +74,7 @@ export function ProtectedRoute({
 
   // User not active
   if (authUser && !authUser.isActive) {
+    console.log('❌ ProtectedRoute: User account inactive');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -80,6 +87,7 @@ export function ProtectedRoute({
 
   // Admin required but user is not admin
   if (requireAdmin && authUser?.role !== 'admin') {
+    console.log('❌ ProtectedRoute: Admin access required but user is not admin');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -98,6 +106,7 @@ export function ProtectedRoute({
 
   // Manager required but user is not manager or admin
   if (requireManager && !['admin', 'manager'].includes(authUser?.role || '')) {
+    console.log('❌ ProtectedRoute: Manager access required but user lacks permissions');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -114,5 +123,6 @@ export function ProtectedRoute({
     );
   }
 
+  console.log('✅ ProtectedRoute: Access granted, rendering children');
   return <>{children}</>;
 }

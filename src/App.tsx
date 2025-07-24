@@ -202,17 +202,20 @@ function AppContent({ activeTab, setActiveTab, user }: {
   const { language } = useApp();
   
   useEffect(() => {
-    // Simulate loading time and then show content
+    console.log('🎯 AppContent mounting...', { activeTab, userId: user?.id, language });
+    
+    // Reduce loading time and show content faster
     const timer = setTimeout(() => {
+      console.log('✅ AppContent ready, showing interface');
       setIsLoading(false);
-    }, 100);
+    }, 50); // Reduced from 100ms to 50ms
     
     return () => clearTimeout(timer);
   }, []);
 
   // Debug logging
   useEffect(() => {
-    console.log('AppContent state:', { activeTab, user: user?.id, language, isLoading });
+    console.log('🔄 AppContent state update:', { activeTab, userId: user?.id, language, isLoading });
   }, [activeTab, user, language, isLoading]);
 
   const PageComponent = pageComponents[activeTab as keyof typeof pageComponents];
@@ -223,30 +226,37 @@ function AppContent({ activeTab, setActiveTab, user }: {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
+      console.log('🌐 Checking URL path:', path);
       if (path === '/subscription/success' && activeTab !== 'subscription-success') {
+        console.log('📍 Navigating to subscription success');
         setActiveTab('subscription-success');
       } else if (path === '/subscription/cancel' && activeTab !== 'subscription-cancel') {
+        console.log('📍 Navigating to subscription cancel');
         setActiveTab('subscription-cancel');
       } else if (path === '/terms' && activeTab !== 'terms') {
+        console.log('📍 Navigating to terms');
         setActiveTab('terms');
       } else if (path === '/privacy' && activeTab !== 'privacy') {
+        console.log('📍 Navigating to privacy');
         setActiveTab('privacy');
       } else if (path === '/gdpr' && activeTab !== 'gdpr') {
+        console.log('📍 Navigating to GDPR');
         setActiveTab('gdpr');
       }
     }
   }, [activeTab, setActiveTab]);
 
   if (isLoading) {
+    console.log('⏳ AppContent still loading...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" text="Carregando dashboard..." />
+        <LoadingSpinner size="lg" text="Preparando sua experiência..." />
       </div>
     );
   }
 
   if (!PageComponent) {
-    console.error('Page component not found for:', activeTab);
+    console.error('❌ Page component not found for:', activeTab);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -264,11 +274,13 @@ function AppContent({ activeTab, setActiveTab, user }: {
   }
 
   const pageTitle = pageTitles[language][activeTab as keyof typeof pageTitles.pt] || activeTab;
+  console.log('🎯 Rendering page:', { activeTab, pageTitle, isFullPageRoute });
   
   // Full page routes don't need sidebar/header
   if (isFullPageRoute) {
     return (
       <ErrorBoundary>
+        {console.log('📄 Rendering full page route:', activeTab)}
         <PageComponent />
       </ErrorBoundary>
     );
@@ -276,6 +288,7 @@ function AppContent({ activeTab, setActiveTab, user }: {
   
   return (
     <ErrorBoundary>
+      {console.log('🏠 Rendering dashboard layout for:', activeTab)}
       <ProtectedRoute requireAdmin={isAdminPage}>
         <div className="flex h-screen bg-gray-50">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />

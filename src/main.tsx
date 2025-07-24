@@ -14,6 +14,12 @@ const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const isValidClerkKey = PUBLISHABLE_KEY && 
   (PUBLISHABLE_KEY.startsWith('pk_test_') || PUBLISHABLE_KEY.startsWith('pk_live_'));
 
+console.log('🔑 Clerk key validation:', { 
+  hasKey: !!PUBLISHABLE_KEY, 
+  isValid: isValidClerkKey,
+  keyPrefix: PUBLISHABLE_KEY?.substring(0, 10) + '...'
+});
+
 // Error component for missing or invalid Clerk key
 const ClerkConfigError = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -72,7 +78,7 @@ const ClerkConfigError = () => (
 
 // Only render the app if we have a valid Clerk key
 if (!isValidClerkKey) {
-  console.error("Missing or invalid Clerk Publishable Key.");
+  console.error("❌ Missing or invalid Clerk Publishable Key.");
   console.error("Please check your .env file and make sure you have set VITE_CLERK_PUBLISHABLE_KEY.");
   console.error("You can get your key from: https://dashboard.clerk.com/last-active?path=api-keys");
   
@@ -82,6 +88,8 @@ if (!isValidClerkKey) {
     </React.StrictMode>
   );
 } else {
+  console.log('✅ Clerk key is valid, initializing app...');
+  
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
       <ClerkProvider 
@@ -102,6 +110,7 @@ if (!isValidClerkKey) {
           }
         }}
       >
+        {console.log('🚀 Clerk provider initialized, starting app...')}
         <BrowserRouter>
           <AppProvider>
             <App />

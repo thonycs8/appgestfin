@@ -123,51 +123,61 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Inicializar autenticação e sincronizar usuário
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('🔄 Starting auth initialization...', { clerkLoaded, userLoaded, isSignedIn, userId: user?.id });
+      
       if (!clerkLoaded || !userLoaded) {
+        console.log('⏳ Waiting for Clerk to load...', { clerkLoaded, userLoaded });
         return;
       }
 
       if (!isSignedIn || !user) {
+        console.log('❌ User not signed in or user data missing', { isSignedIn, hasUser: !!user });
         setIsInitialized(false);
         return;
       }
 
       try {
-        console.log('🔐 Initializing authentication and syncing user...');
+        console.log('🔐 User signed in, initializing authentication...', { userId: user.id, email: user.emailAddresses[0]?.emailAddress });
         
         // Check if Supabase is properly configured
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
         if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
-          console.warn('⚠️ Supabase not configured, running in mock mode');
+          console.warn('⚠️ Supabase not configured, enabling mock mode');
           setIsMockMode(true);
           setIsInitialized(true);
           
           // Load mock data in mock mode
+          console.log('📦 Loading mock data...');
           setTransactions(mockTransactions);
           setCategories(mockCategories);
           setPayables(mockPayables);
           setInvestments(mockInvestments);
+          console.log('✅ Mock data loaded successfully');
           return;
         }
         
+        console.log('🔗 Connecting to Supabase...');
         await ensureSupabaseAuth();
+        console.log('👤 Syncing user to Supabase...');
         await syncUserToSupabase();
         setIsInitialized(true);
-        console.log('✅ Authentication initialized successfully');
+        console.log('✅ Authentication and sync completed successfully');
       } catch (error) {
         console.error('❌ Error during authentication initialization:', error);
         // Don't throw error, just log warning and continue in mock mode
-        console.warn('⚠️ Continuing in mock mode due to auth error');
+        console.warn('⚠️ Falling back to mock mode due to auth error');
         setIsMockMode(true);
         setIsInitialized(true);
         
         // Load mock data in mock mode
+        console.log('📦 Loading mock data as fallback...');
         setTransactions(mockTransactions);
         setCategories(mockCategories);
         setPayables(mockPayables);
         setInvestments(mockInvestments);
+        console.log('✅ Fallback mock data loaded');
       }
     };
 
@@ -177,11 +187,18 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Carregar informações da assinatura
   useEffect(() => {
     const loadSubscription = async () => {
-      if (!isSignedIn || !user || !isInitialized) return;
+      if (!isSignedIn || !user || !isInitialized) {
+        console.log('⏳ Skipping subscription load - not ready', { isSignedIn, hasUser: !!user, isInitialized });
+        return;
+      }
       
       try {
+        console.log('💳 Loading subscription data...');
         const token = await getToken({ template: 'supabase' });
-        if (!token) return;
+        if (!token) {
+          console.log('⚠️ No Supabase token available');
+          return;
+        }
 
         await ensureSupabaseAuth();
         
@@ -191,8 +208,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           .maybeSingle();
 
         setUserSubscription(data);
+        console.log('✅ Subscription data loaded:', data);
       } catch (error) {
-        console.error('Error loading subscription:', error);
+        console.error('❌ Error loading subscription:', error);
       }
     };
 
@@ -202,6 +220,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Inicializar grupos padrão
   useEffect(() => {
     if (isSignedIn && user && isInitialized && groups.length === 0) {
+      console.log('🏷️ Initializing default groups...');
       const defaultGroups: Group[] = [
         {
           id: 'empresa',
@@ -221,6 +240,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         }
       ];
       setGroups(defaultGroups);
+      console.log('✅ Default groups initialized');
     }
   }, [isSignedIn, user, isInitialized, groups.length]);
 
@@ -228,14 +248,16 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   useEffect(() => {
     const loadInitialData = async () => {
       if (!isInitialized || !isSignedIn || !user) {
+        console.log('⏳ Skipping initial data load - not ready', { isInitialized, isSignedIn, hasUser: !!user });
         return;
       }
 
       try {
+        console.log('📊 Loading initial data...');
         // Check if Supabase is configured
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-          console.log('Running in mock mode - no data to load');
+          console.log('📦 Mock mode - skipping database data load');
           return;
         }
         
@@ -243,8 +265,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           loadTransactions(),
           loadCategories()
         ]);
+        console.log('✅ Initial data loaded successfully');
       } catch (error) {
-        console.error('Error loading initial data:', error);
+        console.error('❌ Error loading initial data:', error);
         handleError(error, 'carregamento inicial de dados');
       }
     };
@@ -254,24 +277,30 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   // Transações com filtros melhorados
   const loadTransactions = async (filters?: TransactionFilters, pagination?: PaginationOptions) => {
-    if (!isInitialized) return;
+    if (!isInitialized) {
+      console.log('⏳ Transactions load skipped - not initialized');
+      return;
+    }
     
     // Check if Supabase is configured
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-      console.log('Mock mode: No transactions to load');
+      console.log('📦 Mock mode: Using local transactions data');
       return;
     }
     
+    console.log('📊 Loading transactions from database...');
     setLoading(prev => ({ ...prev, transactions: true }));
     try {
       const result = await databaseService.getTransactions(filters, pagination);
       if (result.success && result.data) {
         setTransactions(result.data);
+        console.log('✅ Transactions loaded:', result.data.length);
       } else {
         throw new Error(result.error || 'Erro ao carregar transações');
       }
     } catch (error) {
+      console.error('❌ Error loading transactions:', error);
       handleError(error, 'carregamento de transações');
     } finally {
       setLoading(prev => ({ ...prev, transactions: false }));
@@ -280,10 +309,12 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     try {
+      console.log('➕ Adding transaction:', transaction);
       // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
         // Mock mode - add to local state
+        console.log('📦 Mock mode: Adding transaction locally');
         const newTransaction: Transaction = {
           ...transaction,
           id: Date.now().toString(),
@@ -291,6 +322,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         };
         setTransactions(prev => [newTransaction, ...prev]);
         toast.success('Transação criada com sucesso! (Modo demonstração)');
+        console.log('✅ Transaction added in mock mode');
         return;
       }
       
@@ -301,6 +333,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       } else {
         throw new Error(result.error || 'Erro ao criar transação');
       }
+      console.log('✅ Transaction added to database');
     } catch (error) {
       handleError(error, 'criação de transação');
       throw error;
@@ -357,24 +390,30 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   // Categorias
   const loadCategories = async (type?: 'income' | 'expense') => {
-    if (!isInitialized) return;
+    if (!isInitialized) {
+      console.log('⏳ Categories load skipped - not initialized');
+      return;
+    }
     
     // Check if Supabase is configured
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
-      console.log('Mock mode: No categories to load');
+      console.log('📦 Mock mode: Using local categories data');
       return;
     }
     
+    console.log('🏷️ Loading categories from database...');
     setLoading(prev => ({ ...prev, categories: true }));
     try {
       const result = await databaseService.getCategories(type);
       if (result.success && result.data) {
         setCategories(result.data);
+        console.log('✅ Categories loaded:', result.data.length);
       } else {
         throw new Error(result.error || 'Erro ao carregar categorias');
       }
     } catch (error) {
+      console.error('❌ Error loading categories:', error);
       handleError(error, 'carregamento de categorias');
     } finally {
       setLoading(prev => ({ ...prev, categories: false }));
