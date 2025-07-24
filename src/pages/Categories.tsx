@@ -25,7 +25,7 @@ const colorOptions = [
 ];
 
 export function Categories() {
-  const { categories, addCategory, updateCategory, deleteCategory, transactions } = useApp();
+  const { categories, addCategory, updateCategory, deleteCategory, transactions, checkPlanLimits, getCurrentPlanLimits } = useApp();
   
   const [newCategory, setNewCategory] = useState({
     name: '',
@@ -36,8 +36,12 @@ export function Categories() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleCreateCategory = () => {
+  const handleCreateCategorySync = async () => {
     if (!newCategory.name || !newCategory.type) return;
+
+    // Verificar limites do plano
+    const canCreate = await checkPlanLimits('category');
+    if (!canCreate) return;
 
     addCategory({
       name: newCategory.name,
@@ -92,6 +96,7 @@ export function Categories() {
 
   const incomeCategories = categories.filter(cat => cat.type === 'income');
   const expenseCategories = categories.filter(cat => cat.type === 'expense');
+  const planLimits = getCurrentPlanLimits();
 
   const getCategoryUsage = (categoryName: string) => {
     const categoryTransactions = transactions.filter(t => t.subcategory === categoryName);
@@ -107,6 +112,11 @@ export function Categories() {
             <div>
               <h1 className="text-4xl font-light text-black mb-2">Categorias</h1>
               <p className="text-gray-600 text-lg">Organize suas transações financeiras</p>
+              {planLimits.categories !== 'unlimited' && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {categories.length}/{planLimits.categories} categorias utilizadas
+                </p>
+              )}
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -178,7 +188,7 @@ export function Categories() {
                   </div>
                   <Button 
                     className="w-full bg-black hover:bg-gray-800 text-white py-3 text-sm font-medium" 
-                    onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
+                    onClick={editingCategory ? handleUpdateCategory : handleCreateCategorySync}
                   >
                     {editingCategory ? 'Atualizar' : 'Criar Categoria'}
                   </Button>
