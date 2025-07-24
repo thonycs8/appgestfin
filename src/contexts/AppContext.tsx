@@ -72,7 +72,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode | ((context: { language: Language }) => ReactNode) }) {
   const [language, setLanguage] = useState<Language>('pt');
-  const { isSignedIn, isLoaded: clerkLoaded } = useAuth();
+  const { isSignedIn, isLoaded: clerkLoaded, getToken } = useAuth();
   const { user, isLoaded: userLoaded } = useUser();
   const { ensureSupabaseAuth, syncUserToSupabase } = useAuthUser();
   
