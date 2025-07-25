@@ -194,7 +194,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       
       try {
         console.log('💳 Loading subscription data...');
-        const token = await getToken({ template: 'supabase' });
+        const token = await getToken();
         if (!token) {
           console.log('⚠️ No Supabase token available');
           return;

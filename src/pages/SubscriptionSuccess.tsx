@@ -17,7 +17,7 @@ export function SubscriptionSuccess() {
   useEffect(() => {
     const fetchSubscription = async () => {
       try {
-        const token = await getToken({ template: 'supabase' });
+        const token = await getToken();
         
         if (!token) {
           throw new Error('No authentication token available');

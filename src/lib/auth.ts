@@ -36,7 +36,7 @@ export function useAuthUser() {
 
     try {
       console.log('🔑 Getting Supabase token...');
-      const token = await getToken({ template: 'supabase' });
+      const token = await getToken();
       if (!token) {
         console.log('❌ No Supabase token received');
         throw new AuthError('Failed to get authentication token', 'TOKEN_ERROR');

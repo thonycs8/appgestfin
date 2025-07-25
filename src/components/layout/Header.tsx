@@ -25,7 +25,7 @@ export function Header({ title }: HeaderProps) {
       if (!isSignedIn) return;
       
       try {
-        const token = await getToken({ template: 'supabase' });
+        const token = await getToken();
         
         if (token) {
           supabase.auth.setSession({
