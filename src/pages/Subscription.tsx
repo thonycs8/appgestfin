@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@clerk/clerk-react';
-import { supabase } from '@/lib/supabase';
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
 import { Check, Crown, Loader2, TrendingUp, Users, Shield, BarChart3, Star, Zap } from 'lucide-react';
 import { stripeProducts, getFreePlan, getPaidPlans } from '@/stripe-config';
@@ -27,30 +27,24 @@ export function Subscription() {
   useEffect(() => {
     const fetchSubscription = async () => {
       try {
-        const token = await getToken();
-        
-        if (!token) {
-          throw new Error('No authentication token available');
-        }
+        console.log('💳 Loading subscription data...');
+        const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
 
-        supabase.auth.setSession({
-          access_token: token,
-          refresh_token: '',
-        });
-
-        const { data, error: fetchError } = await supabase
+        const { data, error: fetchError } = await authenticatedSupabase
           .from('stripe_user_subscriptions')
           .select('*')
           .maybeSingle();
 
         if (fetchError) {
-          throw fetchError;
+          console.warn('⚠️ Subscription fetch error (expected if no Supabase setup):', fetchError.message);
+          return;
         }
 
         setSubscription(data);
+        console.log('✅ Subscription loaded:', data);
       } catch (err) {
-        console.error('Error fetching subscription:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load subscription');
+        console.warn('⚠️ Error fetching subscription (expected if no Supabase setup):', err);
+        // Don't set error for subscription loading issues
       } finally {
         setLoading(false);
       }

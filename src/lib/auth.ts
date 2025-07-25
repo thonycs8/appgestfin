@@ -1,6 +1,6 @@
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useCallback } from 'react';
-import { supabase } from './supabase';
+import { createAuthenticatedSupabaseClient } from './supabase';
 
 export interface AuthUser {
   id: string;
@@ -36,25 +36,38 @@ export function useAuthUser() {
 
     try {
       console.log('🔑 Getting Supabase token...');
-      const token = await getToken();
-      if (!token) {
-        console.log('❌ No Supabase token received');
-        throw new AuthError('Failed to get authentication token', 'TOKEN_ERROR');
+      const authenticatedSupabase = await ensureSupabaseAuth();
+      
+      const { data, error } = await authenticatedSupabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw new AuthError('Failed to get user data', 'USER_FETCH_ERROR');
       }
 
-      console.log('🔗 Setting Supabase session...');
-      const { error } = await supabase.auth.setSession({
-        access_token: token,
-        refresh_token: '',
-      });
-
-      if (error) {
-        console.log('❌ Supabase session error:', error);
-        throw new AuthError(`Supabase auth error: ${error.message}`, 'SUPABASE_ERROR');
+      let userData = null;
+      if (data) {
+        userData = {
+          id: data.id,
+          email: data.email,
+          firstName: data.first_name,
+          lastName: data.last_name,
+          username: data.username,
+          imageUrl: data.avatar_url,
+          role: data.role,
+          isActive: data.is_active,
+          emailVerified: data.email_verified,
+          createdAt: data.created_at,
+          lastSignInAt: data.last_sign_in_at,
+        };
       }
+      
 
       console.log('✅ Supabase authentication successful');
-      return token;
+      return authenticatedSupabase;
     } catch (error) {
       console.error('❌ ensureSupabaseAuth failed:', error);
       if (error instanceof AuthError) throw error;
@@ -67,7 +80,7 @@ export function useAuthUser() {
 
     try {
       console.log('👤 Syncing user to Supabase...', { userId: user.id, email: user.emailAddresses[0]?.emailAddress });
-      await ensureSupabaseAuth();
+      const authenticatedSupabase = await ensureSupabaseAuth();
 
       const userData = {
         id: user.id,
@@ -90,7 +103,7 @@ export function useAuthUser() {
       };
 
       console.log('💾 Upserting user data to Supabase...');
-      const { error } = await supabase
+      const { error } = await authenticatedSupabase
         .from('users')
         .upsert(userData, { onConflict: 'id' });
 
@@ -112,9 +125,9 @@ export function useAuthUser() {
 
     try {
       console.log('👤 Getting auth user data...');
-      await ensureSupabaseAuth();
+      const authenticatedSupabase = await ensureSupabaseAuth();
 
-      const { data, error } = await supabase
+      const { data, error } = await authenticatedSupabase
         .from('users')
         .select('*')
         .eq('id', user.id)
@@ -152,9 +165,9 @@ export function useAuthUser() {
 
   const updateUserRole = useCallback(async (userId: string, role: 'user' | 'admin' | 'manager') => {
     try {
-      await ensureSupabaseAuth();
+      const authenticatedSupabase = await ensureSupabaseAuth();
 
-      const { error } = await supabase
+      const { error } = await authenticatedSupabase
         .from('users')
         .update({ role, updated_at: new Date().toISOString() })
         .eq('id', userId);
@@ -170,9 +183,9 @@ export function useAuthUser() {
 
   const getUserStats = useCallback(async () => {
     try {
-      await ensureSupabaseAuth();
+      const authenticatedSupabase = await ensureSupabaseAuth();
 
-      const { data, error } = await supabase
+      const { data, error } = await authenticatedSupabase
         .rpc('get_user_financial_stats');
 
       if (error) {

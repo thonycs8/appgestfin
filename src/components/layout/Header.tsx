@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth, useUser, SignOutButton } from '@clerk/clerk-react';
 import { useApp } from '@/contexts/AppContext';
-import { supabase } from '@/lib/supabase';
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase';
 import { stripeProducts } from '@/stripe-config';
 import { AlertsDropdown } from '@/components/alerts/AlertsDropdown';
 
@@ -25,23 +25,23 @@ export function Header({ title }: HeaderProps) {
       if (!isSignedIn) return;
       
       try {
-        const token = await getToken();
-        
-        if (token) {
-          supabase.auth.setSession({
-            access_token: token,
-            refresh_token: '',
-          });
+        console.log('💳 Fetching subscription data...');
+        const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
 
-          const { data } = await supabase
-            .from('stripe_user_subscriptions')
-            .select('*')
-            .maybeSingle();
+        const { data, error } = await authenticatedSupabase
+          .from('stripe_user_subscriptions')
+          .select('*')
+          .maybeSingle();
 
-          setSubscription(data);
+        if (error) {
+          console.warn('⚠️ Subscription fetch error (expected if no Supabase setup):', error.message);
+          return;
         }
+
+        setSubscription(data);
+        console.log('✅ Subscription data loaded:', data);
       } catch (error) {
-        console.error('Error fetching subscription:', error);
+        console.warn('⚠️ Error fetching subscription (expected if no Supabase setup):', error);
       }
     };
 

@@ -7,6 +7,7 @@ import { databaseService, TransactionFilters, PaginationOptions } from '@/lib/da
 import { toast } from 'sonner';
 import { getFreePlan } from '@/stripe-config';
 import { mockCategories, mockTransactions, mockPayables, mockInvestments } from '@/lib/data';
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase';
 
 interface AppContextType {
   language: Language;
@@ -194,28 +195,33 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       
       try {
         console.log('💳 Loading subscription data...');
-        const token = await getToken();
-        if (!token) {
-          console.log('⚠️ No Supabase token available');
+        
+        // Check if Supabase is configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+          console.log('⚠️ Supabase not configured, skipping subscription load');
           return;
         }
 
-        await ensureSupabaseAuth();
+        const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
         
-        const { data } = await supabase
+        const { data, error } = await authenticatedSupabase
           .from('stripe_user_subscriptions')
           .select('*')
           .maybeSingle();
 
+        if (error) {
+          console.warn('⚠️ Subscription load error (expected if no Supabase setup):', error.message);
+          return;
+        }
+
         setUserSubscription(data);
         console.log('✅ Subscription data loaded:', data);
       } catch (error) {
-        console.error('❌ Error loading subscription:', error);
+        console.warn('⚠️ Error loading subscription (expected if no Supabase setup):', error);
       }
     };
 
-    loadSubscription();
-  }, [isSignedIn, user, isInitialized, getToken, ensureSupabaseAuth]);
 
   // Inicializar grupos padrão
   useEffect(() => {

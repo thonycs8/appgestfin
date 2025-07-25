@@ -1,11 +1,19 @@
-import { supabase, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
+import { createAuthenticatedSupabaseClient, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
+import { useAuth } from '@clerk/clerk-react';
 import { Transaction, Category, Payable } from '@/types';
 import { DatabaseError, ValidationError, RateLimitError } from '@/lib/errorHandling';
+
+// Get authenticated Supabase client
+const getSupabaseClient = async () => {
+  const { getToken } = useAuth();
+  return createAuthenticatedSupabaseClient(getToken);
+};
 
 // Helper function to ensure user exists in database
 async function ensureUserExists(userId: string, userEmail?: string) {
   try {
     console.log('🔧 Ensuring user exists:', userId);
+    const supabase = await getSupabaseClient();
     
     // First check if user already exists
     const { data: existingUser, error: checkError } = await supabase

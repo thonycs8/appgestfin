@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { useAuth } from '@clerk/clerk-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -17,9 +18,9 @@ export const supabase = createClient(
   supabaseAnonKey || defaultKey, 
   {
     auth: {
-      autoRefreshToken: false, // Clerk handles token refresh
-      persistSession: false,   // Don't persist sessions since Clerk manages auth
-      detectSessionInUrl: false // Don't detect sessions from URL
+      autoRefreshToken: true,
+      persistSession: false,
+      detectSessionInUrl: false
     },
     global: {
       headers: {
@@ -29,6 +30,45 @@ export const supabase = createClient(
   }
 );
 
+// Function to create authenticated Supabase client
+export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<string | null>) => {
+  try {
+    const token = await getToken({ template: 'supabase' });
+    
+    if (!token) {
+      throw new Error('No Supabase token available');
+    }
+
+    // Set the auth token for this session
+    await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: ''
+    });
+
+    return supabase;
+  } catch (error) {
+    console.error('Error creating authenticated Supabase client:', error);
+    throw error;
+  }
+};
+
+// Hook to get authenticated Supabase client
+export const useSupabase = () => {
+  const { getToken, isSignedIn } = useAuth();
+  
+  const getAuthenticatedClient = async () => {
+    if (!isSignedIn) {
+      throw new Error('User not authenticated');
+    }
+    
+    return createAuthenticatedSupabaseClient(getToken);
+  };
+  
+  return {
+    supabase,
+    getAuthenticatedClient
+  };
+};
 // Rate limiting configuration
 export const RATE_LIMITS = {
   TRANSACTIONS_PER_MINUTE: 10,

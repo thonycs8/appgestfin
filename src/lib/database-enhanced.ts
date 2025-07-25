@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { createAuthenticatedSupabaseClient } from './supabase';
+import { useAuth } from '@clerk/clerk-react';
 import { Transaction, Category } from '@/types';
 import { AuthError } from './auth';
 
@@ -27,7 +28,13 @@ export interface TransactionFilters {
 }
 
 class DatabaseService {
+  private async getSupabaseClient() {
+    const { getToken } = useAuth();
+    return createAuthenticatedSupabaseClient(getToken);
+  }
+
   private async ensureAuth(): Promise<string> {
+    const supabase = await this.getSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error || !user) {
