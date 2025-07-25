@@ -221,6 +221,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         console.warn('⚠️ Error loading subscription (expected if no Supabase setup):', error);
       }
     };
+  }
+  )
 
 
   // Inicializar grupos padrão
