@@ -36,36 +36,8 @@ export function useAuthUser() {
 
     try {
       console.log('🔑 Getting Supabase token...');
-      const authenticatedSupabase = await ensureSupabaseAuth();
+      const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
       
-      const { data, error } = await authenticatedSupabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw new AuthError('Failed to get user data', 'USER_FETCH_ERROR');
-      }
-
-      let userData = null;
-      if (data) {
-        userData = {
-          id: data.id,
-          email: data.email,
-          firstName: data.first_name,
-          lastName: data.last_name,
-          username: data.username,
-          imageUrl: data.avatar_url,
-          role: data.role,
-          isActive: data.is_active,
-          emailVerified: data.email_verified,
-          createdAt: data.created_at,
-          lastSignInAt: data.last_sign_in_at,
-        };
-      }
-      
-
       console.log('✅ Supabase authentication successful');
       return authenticatedSupabase;
     } catch (error) {

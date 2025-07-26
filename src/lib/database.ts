@@ -1,19 +1,12 @@
 import { createAuthenticatedSupabaseClient, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
-import { useAuth } from '@clerk/clerk-react';
 import { Transaction, Category, Payable } from '@/types';
 import { DatabaseError, ValidationError, RateLimitError } from '@/lib/errorHandling';
 
-// Get authenticated Supabase client
-const getSupabaseClient = async () => {
-  const { getToken } = useAuth();
-  return createAuthenticatedSupabaseClient(getToken);
-};
-
 // Helper function to ensure user exists in database
-async function ensureUserExists(userId: string, userEmail?: string) {
+async function ensureUserExists(userId: string, userEmail?: string, getToken: () => Promise<string | null>) {
   try {
     console.log('🔧 Ensuring user exists:', userId);
-    const supabase = await getSupabaseClient();
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     
     // First check if user already exists
     const { data: existingUser, error: checkError } = await supabase
@@ -49,7 +42,8 @@ async function ensureUserExists(userId: string, userEmail?: string) {
 export async function createTransaction(
   transaction: Omit<Transaction, 'id'>,
   userId: string,
-  userEmail?: string
+  userEmail?: string,
+  getToken: () => Promise<string | null>
 ): Promise<Transaction> {
   const startTime = Date.now();
   
@@ -69,7 +63,7 @@ export async function createTransaction(
   }
 
   // Ensure user exists
-  await ensureUserExists(userId, userEmail);
+  await ensureUserExists(userId, userEmail, getToken);
 
   const sanitizedTransaction = {
     type: transaction.type,
@@ -85,6 +79,7 @@ export async function createTransaction(
   try {
     console.log('💾 Inserting transaction into database...');
     
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('transactions')
       .insert([sanitizedTransaction])

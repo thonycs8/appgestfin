@@ -1,5 +1,4 @@
 import { createAuthenticatedSupabaseClient } from './supabase';
-import { useAuth } from '@clerk/clerk-react';
 import { Transaction, Category } from '@/types';
 import { AuthError } from './auth';
 
@@ -28,13 +27,12 @@ export interface TransactionFilters {
 }
 
 class DatabaseService {
-  private async getSupabaseClient() {
-    const { getToken } = useAuth();
+  private async getSupabaseClient(getToken: () => Promise<string | null>) {
     return createAuthenticatedSupabaseClient(getToken);
   }
 
-  private async ensureAuth(): Promise<string> {
-    const supabase = await this.getSupabaseClient();
+  private async ensureAuth(getToken: () => Promise<string | null>): Promise<string> {
+    const supabase = await this.getSupabaseClient(getToken);
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error || !user) {
@@ -47,12 +45,14 @@ class DatabaseService {
   // Transações com filtros e paginação melhorados
   async getTransactions(
     filters: TransactionFilters = {},
-    pagination: PaginationOptions = {}
+    pagination: PaginationOptions = {},
+    getToken: () => Promise<string | null>
   ): Promise<DatabaseResponse<Transaction[]>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
       const { page = 1, limit = 50, sortBy = 'created_at', sortOrder = 'desc' } = pagination;
       
+      const supabase = await this.getSupabaseClient(getToken);
       let query = supabase
         .from('transactions')
         .select('*')

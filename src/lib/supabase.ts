@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useSession } from '@clerk/clerk-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -39,13 +39,26 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
       throw new Error('No Supabase token available');
     }
 
-    // Set the auth token for this session
-    await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: ''
-    });
+    // Create a new Supabase client with the Clerk token
+    const authenticatedSupabase = createClient(
+      supabaseUrl || defaultUrl,
+      supabaseAnonKey || defaultKey,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-Client-Info': 'gestfin-app'
+          }
+        },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      }
+    );
 
-    return supabase;
+    return authenticatedSupabase;
   } catch (error) {
     console.error('Error creating authenticated Supabase client:', error);
     throw error;

@@ -26,6 +26,13 @@ export function Header({ title }: HeaderProps) {
       
       try {
         console.log('💳 Fetching subscription data...');
+        // Check if Supabase is configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+          console.log('⚠️ Supabase not configured, skipping subscription load');
+          return;
+        }
+
         const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
 
         const { data, error } = await authenticatedSupabase
@@ -34,14 +41,14 @@ export function Header({ title }: HeaderProps) {
           .maybeSingle();
 
         if (error) {
-          console.warn('⚠️ Subscription fetch error (expected if no Supabase setup):', error.message);
+          console.warn('⚠️ Subscription fetch error:', error.message);
           return;
         }
 
         setSubscription(data);
         console.log('✅ Subscription data loaded:', data);
       } catch (error) {
-        console.warn('⚠️ Error fetching subscription (expected if no Supabase setup):', error);
+        console.warn('⚠️ Error fetching subscription:', error);
       }
     };
 

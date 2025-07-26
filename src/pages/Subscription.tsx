@@ -28,6 +28,14 @@ export function Subscription() {
     const fetchSubscription = async () => {
       try {
         console.log('💳 Loading subscription data...');
+        
+        // Check if Supabase is configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+          console.log('⚠️ Supabase not configured, skipping subscription load');
+          return;
+        }
+
         const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
 
         const { data, error: fetchError } = await authenticatedSupabase
@@ -36,15 +44,14 @@ export function Subscription() {
           .maybeSingle();
 
         if (fetchError) {
-          console.warn('⚠️ Subscription fetch error (expected if no Supabase setup):', fetchError.message);
+          console.warn('⚠️ Subscription fetch error:', fetchError.message);
           return;
         }
 
         setSubscription(data);
         console.log('✅ Subscription loaded:', data);
       } catch (err) {
-        console.warn('⚠️ Error fetching subscription (expected if no Supabase setup):', err);
-        // Don't set error for subscription loading issues
+        console.warn('⚠️ Error fetching subscription:', err);
       } finally {
         setLoading(false);
       }

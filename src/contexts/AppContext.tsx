@@ -211,18 +211,18 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           .maybeSingle();
 
         if (error) {
-          console.warn('⚠️ Subscription load error (expected if no Supabase setup):', error.message);
+          console.warn('⚠️ Subscription load error:', error.message);
           return;
         }
 
         setUserSubscription(data);
         console.log('✅ Subscription data loaded:', data);
       } catch (error) {
-        console.warn('⚠️ Error loading subscription (expected if no Supabase setup):', error);
+        console.warn('⚠️ Error loading subscription:', error);
       }
     };
-  }
-  )
+    loadSubscription();
+  }, [isSignedIn, user, isInitialized, getToken]);
 
 
   // Inicializar grupos padrão
