@@ -205,7 +205,14 @@ export function SubscriptionCard({ userSubscription }: SubscriptionCardProps) {
               <CardHeader className="text-center space-y-4 pb-8">
                 <div className="space-y-2">
                   <h3 className="text-2xl font-bold text-foreground">{product.name}</h3>
-                  <p className="text-muted-foreground">{product.description}</p>
+                  <div className="text-muted-foreground space-y-1">
+                    <p className="text-sm">{product.description}</p>
+                    {product.name === 'Empresarial' && (
+                      <p className="text-xs text-blue-600 font-medium">
+                        {language === 'pt' ? 'Inclui tudo do plano Pro' : 'Includes everything from Pro plan'}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-1">

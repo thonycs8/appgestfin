@@ -104,15 +104,28 @@ export function SubscriptionSuccess() {
             
             {subscription && (
               <div className="p-4 bg-muted rounded-lg">
-                <p className="font-medium">
-                  {language === 'pt' ? 'Plano Ativo' : 'Active Plan'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {subscription.subscription_status === 'active' 
-                    ? (language === 'pt' ? 'Ativo' : 'Active')
-                    : subscription.subscription_status
-                  }
-                </p>
+                <div className="space-y-2">
+                  <p className="font-medium">
+                    {language === 'pt' ? 'Plano Ativo' : 'Active Plan'}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {stripeProducts.find(p => p.priceId === subscription.price_id)?.name || 'Pro'}
+                    </span>
+                    <Badge variant={subscription.subscription_status === 'active' ? 'default' : 'secondary'}>
+                      {subscription.subscription_status === 'active' 
+                        ? (language === 'pt' ? 'Ativo' : 'Active')
+                        : subscription.subscription_status
+                      }
+                    </Badge>
+                  </div>
+                  {subscription.current_period_end && (
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'pt' ? 'Próxima cobrança: ' : 'Next billing: '}
+                      {new Date(subscription.current_period_end * 1000).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB')}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>

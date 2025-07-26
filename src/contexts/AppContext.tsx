@@ -570,7 +570,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       return getFreePlan()?.limits || { transactions: 25, users: 1, categories: 10 };
     }
     
-    const currentProduct = stripeProducts.find(p => p.priceId === userSubscription.price_id);
+    const currentProduct = stripeProducts.find(p => p.priceId === userSubscription.price_id && p.mode === 'subscription');
     return currentProduct?.limits || { transactions: 25, users: 1, categories: 10 };
   };
 

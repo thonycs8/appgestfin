@@ -310,7 +310,12 @@ export function Subscription() {
                 <CardHeader className="text-center space-y-4 pb-8">
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold text-foreground">{product.name}</h3>
-                    <p className="text-muted-foreground">{product.description}</p>
+                    <div className="text-muted-foreground space-y-1">
+                      <p className="text-sm">{product.description}</p>
+                      {product.name === 'Empresarial' && (
+                        <p className="text-xs text-blue-600 font-medium">Inclui tudo do plano Pro</p>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="space-y-1">
@@ -374,7 +379,7 @@ export function Subscription() {
                     <th className="text-center py-4 px-4 font-medium">
                       {language === 'pt' ? 'Gratuito' : 'Free'}
                     </th>
-                    <th className="text-center py-4 px-4 font-medium">Profissional</th>
+                    <th className="text-center py-4 px-4 font-medium">Pro</th>
                     <th className="text-center py-4 px-4 font-medium">Empresarial</th>
                   </tr>
                 </thead>
@@ -398,6 +403,26 @@ export function Subscription() {
                     <td className="text-center py-4 px-4">
                       <Check className="w-5 h-5 text-green-500 mx-auto" />
                       <span className="text-sm">{language === 'pt' ? 'Ilimitados' : 'Unlimited'}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4">{language === 'pt' ? 'Dashboard avançado' : 'Advanced dashboard'}</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                    </td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4">{language === 'pt' ? 'Metas financeiras' : 'Financial goals'}</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                    </td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
                     </td>
                   </tr>
                   <tr>
@@ -428,6 +453,22 @@ export function Subscription() {
                   </tr>
                   <tr>
                     <td className="py-4 px-4">{language === 'pt' ? 'Gerente de conta dedicado' : 'Dedicated account manager'}</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4">{language === 'pt' ? 'Treinamento personalizado' : 'Custom training'}</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">-</td>
+                    <td className="text-center py-4 px-4">
+                      <Check className="w-5 h-5 text-green-500 mx-auto" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4">SLA {language === 'pt' ? 'garantido' : 'guaranteed'}</td>
                     <td className="text-center py-4 px-4">-</td>
                     <td className="text-center py-4 px-4">-</td>
                     <td className="text-center py-4 px-4">

@@ -58,7 +58,7 @@ export function Header({ title }: HeaderProps) {
   const getCurrentPlanName = () => {
     if (!subscription?.price_id) return language === 'pt' ? 'Gratuito' : 'Free';
     
-    const product = stripeProducts.find(p => p.priceId === subscription.price_id && p.mode === 'subscription');
+    const product = stripeProducts.find(p => p.priceId === subscription.price_id);
     return product?.name || (language === 'pt' ? 'Plano Desconhecido' : 'Unknown Plan');
   };
 
