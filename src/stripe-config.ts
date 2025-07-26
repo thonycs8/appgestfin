@@ -22,10 +22,10 @@ export const stripeProducts = [
     }
   },
   {
-    id: 'prod_professional',
+    id: 'prod_SYnoCl0dvnmG6b',
     priceId: 'price_1RdgCjIH2pXtzEEVWaTOg9hL',
-    name: 'GestFin Profissional',
-    description: 'Para pequenas empresas',
+    name: 'Pro',
+    description: 'Ideal para pequenas empresas e profissionais por conta própria',
     mode: 'subscription' as const,
     price: 9.99,
     currency: 'EUR',
@@ -47,7 +47,7 @@ export const stripeProducts = [
     }
   },
   {
-    id: 'prod_enterprise',
+    id: 'prod_SYnpMBQu6jdSDU',
     priceId: 'price_1RdgDcIH2pXtzEEViuNIiPwv',
     name: 'Empresarial',
     description: 'Para empresas em crescimento',
@@ -55,7 +55,7 @@ export const stripeProducts = [
     price: 49.99,
     currency: 'EUR',
     features: [
-      'Tudo do plano Profissional',
+      'Tudo do plano Pro',
       'API personalizada',
       'Integrações avançadas',
       'Relatórios customizados',

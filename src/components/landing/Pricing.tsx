@@ -20,6 +20,14 @@ export function Pricing() {
   const freePlan = getFreePlan();
   const paidPlans = getPaidPlans();
 
+  const formatDescription = (description: string) => {
+    // Split description into bullet points for better readability
+    if (description.includes('Tudo do plano')) {
+      const parts = description.split(/(?=[A-Z][a-z])/);
+      return parts.filter(part => part.trim().length > 0);
+    }
+    return [description];
+  };
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +57,11 @@ export function Pricing() {
               <CardHeader className="text-center space-y-4 pb-8">
                 <div className="space-y-2">
                   <h3 className="text-2xl font-bold text-gray-900">{freePlan.name}</h3>
-                  <p className="text-gray-600">{freePlan.description}</p>
+                  <div className="text-gray-600">
+                    {formatDescription(freePlan.description).map((line, index) => (
+                      <p key={index} className="text-sm">{line}</p>
+                    ))}
+                  </div>
                 </div>
                 
                 <div className="space-y-1">
@@ -101,7 +113,11 @@ export function Pricing() {
                 <CardHeader className="text-center space-y-4 pb-8">
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold text-gray-900">{product.name}</h3>
-                    <p className="text-gray-600">{product.description}</p>
+                    <div className="text-gray-600">
+                      {formatDescription(product.description).map((line, index) => (
+                        <p key={index} className="text-sm">{line}</p>
+                      ))}
+                    </div>
                   </div>
                   
                   <div className="space-y-1">
