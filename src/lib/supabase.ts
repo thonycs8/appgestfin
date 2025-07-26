@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { useAuth, useSession } from '@clerk/clerk-react';
+import { useAuth } from '@clerk/clerk-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -13,12 +13,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const defaultUrl = 'https://placeholder.supabase.co';
 const defaultKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.placeholder';
 
+// Create the base Supabase client
 export const supabase = createClient(
   supabaseUrl || defaultUrl,
-  supabaseAnonKey || defaultKey, 
+  supabaseAnonKey || defaultKey,
   {
     auth: {
-      autoRefreshToken: true,
+      autoRefreshToken: false,
       persistSession: false,
       detectSessionInUrl: false
     },
@@ -30,14 +31,19 @@ export const supabase = createClient(
   }
 );
 
-// Function to create authenticated Supabase client
+// Function to create authenticated Supabase client with Clerk integration
 export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<string | null>) => {
   try {
+    console.log('🔑 Creating authenticated Supabase client...');
+    
+    // Get the Supabase token from Clerk
     const token = await getToken({ template: 'supabase' });
     
     if (!token) {
-      throw new Error('No Supabase token available');
+      throw new Error('No Supabase token available from Clerk');
     }
+
+    console.log('✅ Supabase token obtained from Clerk');
 
     // Create a new Supabase client with the Clerk token
     const authenticatedSupabase = createClient(
@@ -58,9 +64,10 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
       }
     );
 
+    console.log('✅ Authenticated Supabase client created successfully');
     return authenticatedSupabase;
   } catch (error) {
-    console.error('Error creating authenticated Supabase client:', error);
+    console.error('❌ Error creating authenticated Supabase client:', error);
     throw error;
   }
 };
@@ -82,6 +89,7 @@ export const useSupabase = () => {
     getAuthenticatedClient
   };
 };
+
 // Rate limiting configuration
 export const RATE_LIMITS = {
   TRANSACTIONS_PER_MINUTE: 10,

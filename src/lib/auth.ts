@@ -23,7 +23,7 @@ export class AuthError extends Error {
   }
 }
 
-// Hook personalizado para autenticação
+// Hook personalizado para autenticação Supabase + Clerk
 export function useAuthUser() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
@@ -35,7 +35,7 @@ export function useAuthUser() {
     }
 
     try {
-      console.log('🔑 Getting Supabase token...');
+      console.log('🔑 Creating authenticated Supabase client...');
       const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
       
       console.log('✅ Supabase authentication successful');
@@ -51,7 +51,11 @@ export function useAuthUser() {
     if (!isSignedIn || !user) return;
 
     try {
-      console.log('👤 Syncing user to Supabase...', { userId: user.id, email: user.emailAddresses[0]?.emailAddress });
+      console.log('👤 Syncing user to Supabase...', { 
+        userId: user.id, 
+        email: user.emailAddresses[0]?.emailAddress 
+      });
+      
       const authenticatedSupabase = await ensureSupabaseAuth();
 
       const userData = {

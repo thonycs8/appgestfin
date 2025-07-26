@@ -3,6 +3,20 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
 import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoal } from '@/types';
 import { useAuthUser } from '@/lib/auth';
+import { 
+  createTransaction, 
+  getTransactions, 
+  updateTransaction, 
+  deleteTransaction,
+  createCategory,
+  getCategories,
+  updateCategory,
+  deleteCategory,
+  createPayable,
+  getPayables,
+  updatePayable,
+  deletePayable
+} from '@/lib/database';
 import { databaseService, TransactionFilters, PaginationOptions } from '@/lib/database-enhanced';
 import { toast } from 'sonner';
 import { getFreePlan } from '@/stripe-config';
@@ -300,7 +314,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     console.log('📊 Loading transactions from database...');
     setLoading(prev => ({ ...prev, transactions: true }));
     try {
-      const result = await databaseService.getTransactions(filters, pagination);
+      const result = await databaseService.getTransactions(filters, pagination, getToken);
       if (result.success && result.data) {
         setTransactions(result.data);
         console.log('✅ Transactions loaded:', result.data.length);
@@ -334,13 +348,14 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const result = await databaseService.createTransaction(transaction);
-      if (result.success && result.data) {
-        setTransactions(prev => [result.data!, ...prev]);
-        toast.success('Transação criada com sucesso!');
-      } else {
-        throw new Error(result.error || 'Erro ao criar transação');
-      }
+      const newTransaction = await createTransaction(
+        transaction, 
+        user!.id, 
+        user!.emailAddresses[0]?.emailAddress,
+        getToken
+      );
+      setTransactions(prev => [newTransaction, ...prev]);
+      toast.success('Transação criada com sucesso!');
       console.log('✅ Transaction added to database');
     } catch (error) {
       handleError(error, 'criação de transação');
@@ -359,13 +374,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const result = await databaseService.updateTransaction(id, updates);
-      if (result.success && result.data) {
-        setTransactions(prev => prev.map(t => t.id === id ? result.data! : t));
-        toast.success('Transação atualizada com sucesso!');
-      } else {
-        throw new Error(result.error || 'Erro ao atualizar transação');
-      }
+      const updatedTransaction = await updateTransaction(id, updates, user!.id, getToken);
+      setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
+      toast.success('Transação atualizada com sucesso!');
     } catch (error) {
       handleError(error, 'atualização de transação');
       throw error;
@@ -383,13 +394,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const result = await databaseService.deleteTransaction(id);
-      if (result.success) {
-        setTransactions(prev => prev.filter(t => t.id !== id));
-        toast.success('Transação excluída com sucesso!');
-      } else {
-        throw new Error(result.error || 'Erro ao excluir transação');
-      }
+      await deleteTransaction(id, user!.id, getToken);
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      toast.success('Transação excluída com sucesso!');
     } catch (error) {
       handleError(error, 'exclusão de transação');
       throw error;
@@ -413,7 +420,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     console.log('🏷️ Loading categories from database...');
     setLoading(prev => ({ ...prev, categories: true }));
     try {
-      const result = await databaseService.getCategories(type);
+      const result = await databaseService.getCategories(type, getToken);
       if (result.success && result.data) {
         setCategories(result.data);
         console.log('✅ Categories loaded:', result.data.length);
@@ -445,13 +452,14 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const result = await databaseService.createCategory(category);
-      if (result.success && result.data) {
-        setCategories(prev => [result.data!, ...prev]);
-        toast.success('Categoria criada com sucesso!');
-      } else {
-        throw new Error(result.error || 'Erro ao criar categoria');
-      }
+      const newCategory = await createCategory(
+        category, 
+        user!.id, 
+        user!.emailAddresses[0]?.emailAddress,
+        getToken
+      );
+      setCategories(prev => [newCategory, ...prev]);
+      toast.success('Categoria criada com sucesso!');
     } catch (error) {
       handleError(error, 'criação de categoria');
       throw error;
@@ -460,7 +468,16 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
 
   const updateCategory = async (id: string, updates: Partial<Category>) => {
     try {
-      // Mock mode always for categories
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
+        // Mock mode - update local state
+        setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+        toast.success('Categoria atualizada com sucesso! (Modo demonstração)');
+        return;
+      }
+      
+      const updatedCategory = await updateCategory(id, updates, user!.id, getToken);
       setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
@@ -477,7 +494,16 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         throw new Error('Esta categoria está sendo usada em transações e não pode ser excluída.');
       }
       
-      // Mock mode always for categories
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
+        // Mock mode - remove from local state
+        setCategories(prev => prev.filter(c => c.id !== id));
+        toast.success('Categoria excluída com sucesso! (Modo demonstração)');
+        return;
+      }
+      
+      await deleteCategory(id, user!.id, getToken);
       setCategories(prev => prev.filter(c => c.id !== id));
       toast.success('Categoria excluída com sucesso!');
     } catch (error) {
@@ -503,7 +529,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return summary;
       }
       
-      const result = await databaseService.getFinancialSummary(dateFrom, dateTo);
+      const result = await databaseService.getFinancialSummary(dateFrom, dateTo, getToken);
       if (result.success) {
         return result.data;
       } else {
@@ -544,7 +570,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const result = await databaseService.exportUserData();
+      const result = await databaseService.exportUserData(getToken);
       if (result.success && result.data) {
         const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);

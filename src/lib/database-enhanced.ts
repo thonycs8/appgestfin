@@ -33,13 +33,27 @@ class DatabaseService {
 
   private async ensureAuth(getToken: () => Promise<string | null>): Promise<string> {
     const supabase = await this.getSupabaseClient(getToken);
-    const { data: { user }, error } = await supabase.auth.getUser();
     
-    if (error || !user) {
+    // Com Clerk + Supabase, o usuário já está autenticado via JWT
+    // Vamos obter o ID do usuário do token JWT
+    const token = await getToken({ template: 'supabase' });
+    if (!token) {
       throw new AuthError('Authentication required', 'NOT_AUTHENTICATED');
     }
     
-    return user.id;
+    // Decodificar o token para obter o user ID
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = payload.sub || payload.user_id;
+      
+      if (!userId) {
+        throw new AuthError('User ID not found in token', 'INVALID_TOKEN');
+      }
+      
+      return userId;
+    } catch (error) {
+      throw new AuthError('Invalid token format', 'INVALID_TOKEN');
+    }
   }
 
   // Transações com filtros e paginação melhorados
@@ -125,9 +139,12 @@ class DatabaseService {
     }
   }
 
-  async createTransaction(transaction: Omit<Transaction, 'id'>): Promise<DatabaseResponse<Transaction>> {
+  async createTransaction(
+    transaction: Omit<Transaction, 'id'>,
+    getToken: () => Promise<string | null>
+  ): Promise<DatabaseResponse<Transaction>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
 
       // Validações
       if (!transaction.description?.trim()) {
@@ -153,6 +170,7 @@ class DatabaseService {
         user_id: userId
       };
 
+      const supabase = await this.getSupabaseClient(getToken);
       const { data, error } = await supabase
         .from('transactions')
         .insert([transactionData])
@@ -188,10 +206,11 @@ class DatabaseService {
 
   async updateTransaction(
     id: string, 
-    updates: Partial<Transaction>
+    updates: Partial<Transaction>,
+    getToken: () => Promise<string | null>
   ): Promise<DatabaseResponse<Transaction>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
 
       // Validações
       if (updates.amount !== undefined && updates.amount <= 0) {
@@ -214,6 +233,7 @@ class DatabaseService {
       
       updateData.updated_at = new Date().toISOString();
 
+      const supabase = await this.getSupabaseClient(getToken);
       const { data, error } = await supabase
         .from('transactions')
         .update(updateData)
@@ -253,10 +273,11 @@ class DatabaseService {
     }
   }
 
-  async deleteTransaction(id: string): Promise<DatabaseResponse<boolean>> {
+  async deleteTransaction(id: string, getToken: () => Promise<string | null>): Promise<DatabaseResponse<boolean>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
 
+      const supabase = await this.getSupabaseClient(getToken);
       const { error } = await supabase
         .from('transactions')
         .delete()
@@ -279,10 +300,14 @@ class DatabaseService {
   }
 
   // Categorias com melhor validação
-  async getCategories(type?: 'income' | 'expense'): Promise<DatabaseResponse<Category[]>> {
+  async getCategories(
+    type?: 'income' | 'expense',
+    getToken: () => Promise<string | null>
+  ): Promise<DatabaseResponse<Category[]>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
       
+      const supabase = await this.getSupabaseClient(getToken);
       let query = supabase
         .from('categories')
         .select('*')
@@ -320,9 +345,12 @@ class DatabaseService {
     }
   }
 
-  async createCategory(category: Omit<Category, 'id' | 'createdAt'>): Promise<DatabaseResponse<Category>> {
+  async createCategory(
+    category: Omit<Category, 'id' | 'createdAt'>,
+    getToken: () => Promise<string | null>
+  ): Promise<DatabaseResponse<Category>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
 
       // Validações
       if (!category.name?.trim()) {
@@ -334,6 +362,7 @@ class DatabaseService {
       }
 
       // Verificar se já existe uma categoria com o mesmo nome e tipo
+      const supabase = await this.getSupabaseClient(getToken);
       const { data: existing } = await supabase
         .from('categories')
         .select('id')
@@ -386,10 +415,15 @@ class DatabaseService {
   }
 
   // Estatísticas financeiras
-  async getFinancialSummary(dateFrom?: string, dateTo?: string): Promise<DatabaseResponse<any>> {
+  async getFinancialSummary(
+    dateFrom?: string, 
+    dateTo?: string,
+    getToken: () => Promise<string | null>
+  ): Promise<DatabaseResponse<any>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
       
+      const supabase = await this.getSupabaseClient(getToken);
       let query = supabase
         .from('transactions')
         .select('type, amount, category')
@@ -445,14 +479,14 @@ class DatabaseService {
   }
 
   // Backup de dados do usuário
-  async exportUserData(): Promise<DatabaseResponse<any>> {
+  async exportUserData(getToken: () => Promise<string | null>): Promise<DatabaseResponse<any>> {
     try {
-      const userId = await this.ensureAuth();
+      const userId = await this.ensureAuth(getToken);
       
       const [transactions, categories, payables] = await Promise.all([
-        this.getTransactions(),
-        this.getCategories(),
-        supabase.from('payables').select('*').eq('user_id', userId)
+        this.getTransactions({}, {}, getToken),
+        this.getCategories(undefined, getToken),
+        this.getPayables(getToken)
       ]);
 
       const exportData = {
@@ -472,6 +506,23 @@ class DatabaseService {
         error: error instanceof Error ? error.message : 'Erro ao exportar dados', 
         success: false 
       };
+    }
+  }
+
+  // Payables helper method
+  private async getPayables(getToken: () => Promise<string | null>) {
+    try {
+      const userId = await this.ensureAuth(getToken);
+      const supabase = await this.getSupabaseClient(getToken);
+      
+      const { data, error } = await supabase
+        .from('payables')
+        .select('*')
+        .eq('user_id', userId);
+
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
     }
   }
 }

@@ -21,6 +21,7 @@ async function ensureUserExists(userId: string, userEmail?: string, getToken: ()
         .from('users')
         .insert({
           id: userId,
+          clerk_id: userId,
           email: userEmail || `${userId}@clerk.local`
         });
         
@@ -119,12 +120,13 @@ export async function createTransaction(
   }
 }
 
-export async function getTransactions(userId: string): Promise<Transaction[]> {
+export async function getTransactions(userId: string, getToken: () => Promise<string | null>): Promise<Transaction[]> {
   const startTime = Date.now();
   
   console.log('📊 Fetching transactions for user:', userId);
   
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
@@ -165,7 +167,8 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
 export async function updateTransaction(
   id: string,
   updates: Partial<Transaction>,
-  userId: string
+  userId: string,
+  getToken: () => Promise<string | null>
 ): Promise<Transaction> {
   const startTime = Date.now();
   
@@ -195,6 +198,7 @@ export async function updateTransaction(
   if (updates.status) sanitizedUpdates.status = updates.status;
 
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('transactions')
       .update(sanitizedUpdates)
@@ -235,12 +239,13 @@ export async function updateTransaction(
   }
 }
 
-export async function deleteTransaction(id: string, userId: string): Promise<void> {
+export async function deleteTransaction(id: string, userId: string, getToken: () => Promise<string | null>): Promise<void> {
   const startTime = Date.now();
   
   console.log('🗑️ Deleting transaction:', id, 'for user:', userId);
   
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { error } = await supabase
       .from('transactions')
       .delete()
@@ -272,7 +277,8 @@ export async function deleteTransaction(id: string, userId: string): Promise<voi
 export async function createCategory(
   category: Omit<Category, 'id' | 'createdAt'>,
   userId: string,
-  userEmail?: string
+  userEmail?: string,
+  getToken: () => Promise<string | null>
 ): Promise<Category> {
   const startTime = Date.now();
   
@@ -283,7 +289,7 @@ export async function createCategory(
   }
 
   // Ensure user exists
-  await ensureUserExists(userId, userEmail);
+  await ensureUserExists(userId, userEmail, getToken);
 
   const sanitizedCategory = {
     name: sanitizeInput(category.name),
@@ -296,7 +302,7 @@ export async function createCategory(
   try {
     console.log('💾 Inserting category into database...');
     
-    // Use upsert to avoid conflicts
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('categories')
       .upsert([sanitizedCategory], { 
@@ -337,12 +343,13 @@ export async function createCategory(
   }
 }
 
-export async function getCategories(userId: string): Promise<Category[]> {
+export async function getCategories(userId: string, getToken: () => Promise<string | null>): Promise<Category[]> {
   const startTime = Date.now();
   
   console.log('📊 Fetching categories for user:', userId);
   
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('categories')
       .select('*')
@@ -381,7 +388,8 @@ export async function getCategories(userId: string): Promise<Category[]> {
 export async function updateCategory(
   id: string,
   updates: Partial<Category>,
-  userId: string
+  userId: string,
+  getToken: () => Promise<string | null>
 ): Promise<Category> {
   const startTime = Date.now();
   
@@ -399,6 +407,7 @@ export async function updateCategory(
   if (updates.isActive !== undefined) sanitizedUpdates.is_active = updates.isActive;
 
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('categories')
       .update(sanitizedUpdates)
@@ -437,12 +446,13 @@ export async function updateCategory(
   }
 }
 
-export async function deleteCategory(id: string, userId: string): Promise<void> {
+export async function deleteCategory(id: string, userId: string, getToken: () => Promise<string | null>): Promise<void> {
   const startTime = Date.now();
   
   console.log('🗑️ Deleting category:', id, 'for user:', userId);
   
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { error } = await supabase
       .from('categories')
       .delete()
@@ -474,7 +484,8 @@ export async function deleteCategory(id: string, userId: string): Promise<void> 
 export async function createPayable(
   payable: Omit<Payable, 'id'>,
   userId: string,
-  userEmail?: string
+  userEmail?: string,
+  getToken: () => Promise<string | null>
 ): Promise<Payable> {
   const startTime = Date.now();
   
@@ -493,7 +504,7 @@ export async function createPayable(
   }
 
   // Ensure user exists
-  await ensureUserExists(userId, userEmail);
+  await ensureUserExists(userId, userEmail, getToken);
 
   const sanitizedPayable = {
     description: sanitizeInput(payable.description),
@@ -508,6 +519,7 @@ export async function createPayable(
   try {
     console.log('💾 Inserting payable into database...');
     
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('payables')
       .insert([sanitizedPayable])
@@ -546,12 +558,13 @@ export async function createPayable(
   }
 }
 
-export async function getPayables(userId: string): Promise<Payable[]> {
+export async function getPayables(userId: string, getToken: () => Promise<string | null>): Promise<Payable[]> {
   const startTime = Date.now();
   
   console.log('📊 Fetching payables for user:', userId);
   
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('payables')
       .select('*')
@@ -591,7 +604,8 @@ export async function getPayables(userId: string): Promise<Payable[]> {
 export async function updatePayable(
   id: string,
   updates: Partial<Payable>,
-  userId: string
+  userId: string,
+  getToken: () => Promise<string | null>
 ): Promise<Payable> {
   const startTime = Date.now();
   
@@ -620,6 +634,7 @@ export async function updatePayable(
   if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier ? sanitizeInput(updates.supplier) : null;
 
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('payables')
       .update(sanitizedUpdates)
@@ -659,12 +674,13 @@ export async function updatePayable(
   }
 }
 
-export async function deletePayable(id: string, userId: string): Promise<void> {
+export async function deletePayable(id: string, userId: string, getToken: () => Promise<string | null>): Promise<void> {
   const startTime = Date.now();
   
   console.log('🗑️ Deleting payable:', id, 'for user:', userId);
   
   try {
+    const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { error } = await supabase
       .from('payables')
       .delete()
