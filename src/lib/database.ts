@@ -1,16 +1,14 @@
-import { createAuthenticatedSupabaseClient, createSupabaseClientWithUserId, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
+import { createRobustSupabaseClient, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
 import { Transaction, Category, Payable } from '@/types';
 import { DatabaseError, ValidationError, RateLimitError } from '@/lib/errorHandling';
 
-// Helper function to get authenticated Supabase client with fallback
+// Helper function to get authenticated Supabase client with robust fallback
 async function getAuthenticatedClient(userId: string, getToken: () => Promise<string | null>) {
   try {
-    // Try token-based authentication first
-    return await createAuthenticatedSupabaseClient(getToken);
+    return await createRobustSupabaseClient(getToken, userId);
   } catch (error) {
-    console.warn('⚠️ Token auth failed, using user ID fallback:', error);
-    // Fallback to user ID based client
-    return await createSupabaseClientWithUserId(userId);
+    console.error('❌ Failed to create authenticated client:', error);
+    throw new DatabaseError('Failed to authenticate with database', 'AUTH_ERROR', { userId });
   }
 }
 
