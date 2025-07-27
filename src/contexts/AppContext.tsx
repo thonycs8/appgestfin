@@ -3,12 +3,42 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
 import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoal } from '@/types';
 import { useAuthUser } from '@/lib/auth';
-import * as database from '@/lib/database';
-import { databaseService, TransactionFilters, PaginationOptions } from '@/lib/database-enhanced';
+import { 
+  createTransaction, 
+  getTransactions, 
+  updateTransaction, 
+  deleteTransaction,
+  createCategory,
+  getCategories,
+  updateCategory,
+  deleteCategory,
+  createPayable,
+  getPayables,
+  updatePayable,
+  deletePayable
+} from '@/lib/database';
 import { toast } from 'sonner';
-import { getFreePlan } from '@/stripe-config';
+import { getFreePlan, stripeProducts } from '@/stripe-config';
 import { mockCategories, mockTransactions, mockPayables, mockInvestments } from '@/lib/data';
-import { createAuthenticatedSupabaseClient } from '@/lib/supabase';
+import { createRobustSupabaseClient } from '@/lib/supabase';
+
+interface TransactionFilters {
+  type?: 'income' | 'expense';
+  category?: string;
+  subcategory?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  amountMin?: number;
+  amountMax?: number;
+  status?: string;
+}
+
+interface PaginationOptions {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
 
 interface AppContextType {
   language: Language;
@@ -234,7 +264,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
           return;
         }
 
-        const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
+        const authenticatedSupabase = await createRobustSupabaseClient(getToken, user.id);
         
         const { data, error } = await authenticatedSupabase
           .from('stripe_user_subscriptions')
@@ -332,13 +362,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     console.log('📊 Loading transactions from database...');
     setLoading(prev => ({ ...prev, transactions: true }));
     try {
-      const result = await databaseService.getTransactions(filters, pagination, getToken);
-      if (result.success && result.data) {
-        setTransactions(result.data);
-        console.log('✅ Transactions loaded:', result.data.length);
-      } else {
-        throw new Error(result.error || 'Erro ao carregar transações');
-      }
+      const data = await getTransactions(user!.id, getToken);
+      setTransactions(data);
+      console.log('✅ Transactions loaded:', data.length);
     } catch (error) {
       console.error('❌ Error loading transactions:', error);
       handleError(error, 'carregamento de transações');
@@ -366,7 +392,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const createdTransaction = await database.createTransaction(
+      const createdTransaction = await createTransaction(
         transaction, 
         user!.id, 
         user!.emailAddresses[0]?.emailAddress,
@@ -392,7 +418,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const updatedTransaction = await database.updateTransaction(id, updates, user!.id, getToken);
+      const updatedTransaction = await updateTransaction(id, updates, user!.id, getToken);
       setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
       toast.success('Transação atualizada com sucesso!');
     } catch (error) {
@@ -412,7 +438,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      await database.deleteTransaction(id, user!.id, getToken);
+      await deleteTransaction(id, user!.id, getToken);
       setTransactions(prev => prev.filter(t => t.id !== id));
       toast.success('Transação excluída com sucesso!');
     } catch (error) {
@@ -438,13 +464,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     console.log('🏷️ Loading categories from database...');
     setLoading(prev => ({ ...prev, categories: true }));
     try {
-      const result = await databaseService.getCategories(type, getToken);
-      if (result.success && result.data) {
-        setCategories(result.data);
-        console.log('✅ Categories loaded:', result.data.length);
-      } else {
-        throw new Error(result.error || 'Erro ao carregar categorias');
-      }
+      const data = await getCategories(user!.id, getToken);
+      setCategories(data);
+      console.log('✅ Categories loaded:', data.length);
     } catch (error) {
       console.error('❌ Error loading categories:', error);
       handleError(error, 'carregamento de categorias');
@@ -470,7 +492,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const newCategory = await database.createCategory(
+      const newCategory = await createCategory(
         category, 
         user!.id, 
         user!.emailAddresses[0]?.emailAddress,
@@ -495,7 +517,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      await database.updateCategory(id, updates, user!.id, getToken);
+      await updateCategory(id, updates, user!.id, getToken);
       setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
@@ -521,7 +543,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      await database.deleteCategory(id, user!.id, getToken);
+      await deleteCategory(id, user!.id, getToken);
       setCategories(prev => prev.filter(c => c.id !== id));
       toast.success('Categoria excluída com sucesso!');
     } catch (error) {
@@ -547,12 +569,15 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return summary;
       }
       
-      const result = await databaseService.getFinancialSummary(dateFrom, dateTo, getToken);
-      if (result.success) {
-        return result.data;
-      } else {
-        throw new Error(result.error || 'Erro ao buscar resumo financeiro');
-      }
+      // For now, calculate from local data until we implement the RPC function
+      const summary = {
+        totalIncome: transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+        totalExpenses: transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
+        transactionCount: transactions.length,
+        incomeByCategory: {},
+        expensesByCategory: {}
+      };
+      return summary;
     } catch (error) {
       handleError(error, 'busca de resumo financeiro');
       return null;
@@ -588,21 +613,26 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const result = await databaseService.exportUserData(getToken);
-      if (result.success && result.data) {
-        const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `gestfin-backup-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success('Dados exportados com sucesso!');
-      } else {
-        throw new Error(result.error || 'Erro ao exportar dados');
-      }
+      // Export current data
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        userId: user?.id,
+        transactions,
+        categories,
+        payables,
+        version: '1.0'
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gestfin-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Dados exportados com sucesso!');
     } catch (error) {
       handleError(error, 'exportação de dados');
     }
@@ -699,9 +729,9 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     console.log('💳 Loading payables from database...');
     setLoading(prev => ({ ...prev, payables: true }));
     try {
-      const result = await database.getPayables(user!.id, getToken);
-      setPayables(result);
-      console.log('✅ Payables loaded:', result.length);
+      const data = await getPayables(user!.id, getToken);
+      setPayables(data);
+      console.log('✅ Payables loaded:', data.length);
     } catch (error) {
       console.error('❌ Error loading payables:', error);
       handleError(error, 'carregamento de contas a pagar');
@@ -723,7 +753,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const newPayable = await database.createPayable(
+      const newPayable = await createPayable(
         payable, 
         user!.id, 
         user!.emailAddresses[0]?.emailAddress,
@@ -748,7 +778,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const updatedPayable = await database.updatePayable(id, payable, user!.id, getToken);
+      const updatedPayable = await updatePayable(id, payable, user!.id, getToken);
       setPayables(prev => prev.map(p => p.id === id ? updatedPayable : p));
       toast.success('Conta a pagar atualizada com sucesso!');
     } catch (error) {
@@ -768,7 +798,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      await database.deletePayable(id, user!.id, getToken);
+      await deletePayable(id, user!.id, getToken);
       setPayables(prev => prev.filter(p => p.id !== id));
       toast.success('Conta a pagar excluída com sucesso!');
     } catch (error) {
