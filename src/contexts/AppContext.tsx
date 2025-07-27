@@ -336,15 +336,13 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const newTransaction = await createTransaction(
-      )
-      const newTransaction = await database.createTransaction(
+      const createdTransaction = await database.createTransaction(
         transaction, 
         user!.id, 
         user!.emailAddresses[0]?.emailAddress,
         getToken
       );
-      setTransactions(prev => [newTransaction, ...prev]);
+      setTransactions(prev => [createdTransaction, ...prev]);
       toast.success('Transação criada com sucesso!');
       console.log('✅ Transaction added to database');
     } catch (error) {
