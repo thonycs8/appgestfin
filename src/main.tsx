@@ -65,13 +65,13 @@ const ClerkConfigError = () => (
         <div className="flex items-start space-x-2">
           <span className="text-blue-600 font-semibold">5.</span>
           <span className="text-sm text-gray-700">
-            Configure os domínios no Clerk: <code className="bg-gray-100 px-1 rounded text-xs">http://localhost:5173</code> e adicione o template JWT "supabase"
+            Configure os domínios no Clerk: <code className="bg-gray-100 px-1 rounded text-xs">http://localhost:5173</code>
           </span>
         </div>
       </div>
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
         <p className="text-xs text-yellow-800">
-          <strong>Importante:</strong> A chave deve começar com <code>pk_test_</code> ou <code>pk_live_</code> e você deve configurar o template JWT "supabase" no Clerk
+          <strong>Importante:</strong> A chave deve começar com <code>pk_test_</code> ou <code>pk_live_</code>. O template JWT "supabase" é opcional.
         </p>
       </div>
     </div>
@@ -97,6 +97,8 @@ if (!isValidClerkKey) {
       <ClerkProvider 
         publishableKey={PUBLISHABLE_KEY}
         afterSignOutUrl="/"
+        signInFallbackRedirectUrl="/"
+        signUpFallbackRedirectUrl="/"
         appearance={{
           baseTheme: undefined,
           variables: {
