@@ -22,13 +22,22 @@ async function ensureUserExists(userId: string, userEmail?: string, getToken: ()
         .insert({
           id: userId,
           clerk_id: userId,
-          email: userEmail || `${userId}@clerk.local`
+          email: userEmail || `${userId}@clerk.local`,
+          is_active: true
         });
         
       if (insertError) {
         console.warn('⚠️ Warning creating user record:', insertError);
       } else {
         console.log('✅ Created new user record for:', userId);
+        
+        // Create default categories for new user
+        try {
+          await supabase.rpc('create_default_categories', { p_user_id: userId });
+          console.log('✅ Created default categories for user:', userId);
+        } catch (error) {
+          console.warn('⚠️ Warning creating default categories:', error);
+        }
       }
     } else {
       console.log('✅ User record already exists for:', userId);
@@ -68,8 +77,8 @@ export async function createTransaction(
 
   const sanitizedTransaction = {
     type: transaction.type,
-    category: transaction.category,
-    subcategory: sanitizeInput(transaction.subcategory),
+    category: transaction.category || 'geral',
+    subcategory: sanitizeInput(transaction.subcategory || 'Sem categoria'),
     amount: transaction.amount,
     description: sanitizeInput(transaction.description),
     date: transaction.date,
@@ -106,10 +115,11 @@ export async function createTransaction(
       type: data.type,
       category: data.category,
       subcategory: data.subcategory,
-      amount: data.amount,
+      amount: parseFloat(data.amount),
       description: data.description,
       date: data.date,
-      status: data.status
+      status: data.status,
+      userId: data.user_id
     };
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
@@ -150,10 +160,11 @@ export async function getTransactions(userId: string, getToken: () => Promise<st
       type: item.type,
       category: item.category,
       subcategory: item.subcategory,
-      amount: item.amount,
+      amount: parseFloat(item.amount),
       description: item.description,
       date: item.date,
-      status: item.status
+      status: item.status,
+      userId: item.user_id
     }));
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
@@ -225,10 +236,11 @@ export async function updateTransaction(
       type: data.type,
       category: data.category,
       subcategory: data.subcategory,
-      amount: data.amount,
+      amount: parseFloat(data.amount),
       description: data.description,
       date: data.date,
-      status: data.status
+      status: data.status,
+      userId: data.user_id
     };
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
@@ -294,7 +306,8 @@ export async function createCategory(
   const sanitizedCategory = {
     name: sanitizeInput(category.name),
     type: category.type,
-    color: category.color || '#000000',
+    description: category.description ? sanitizeInput(category.description) : null,
+    color: category.color || '#3B82F6',
     user_id: userId,
     is_active: category.isActive !== undefined ? category.isActive : true
   };
@@ -305,10 +318,7 @@ export async function createCategory(
     const supabase = await createAuthenticatedSupabaseClient(getToken);
     const { data, error } = await supabase
       .from('categories')
-      .upsert([sanitizedCategory], { 
-        onConflict: 'user_id,name,type',
-        ignoreDuplicates: false 
-      })
+      .insert([sanitizedCategory])
       .select()
       .single();
 
@@ -332,7 +342,8 @@ export async function createCategory(
       type: data.type,
       color: data.color,
       isActive: data.is_active,
-      createdAt: data.created_at
+      createdAt: data.created_at,
+      userId: data.user_id
     };
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
@@ -374,7 +385,8 @@ export async function getCategories(userId: string, getToken: () => Promise<stri
       type: item.type,
       color: item.color,
       isActive: item.is_active,
-      createdAt: item.created_at
+      createdAt: item.created_at,
+      userId: item.user_id
     }));
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
@@ -435,7 +447,8 @@ export async function updateCategory(
       type: data.type,
       color: data.color,
       isActive: data.is_active,
-      createdAt: data.created_at
+      createdAt: data.created_at,
+      userId: data.user_id
     };
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
@@ -510,9 +523,9 @@ export async function createPayable(
     description: sanitizeInput(payable.description),
     amount: payable.amount,
     due_date: payable.dueDate,
-    category: payable.category,
-    status: payable.status || 'pending',
-    supplier: payable.supplier ? sanitizeInput(payable.supplier) : null,
+    category_id: payable.category ? payable.category : null,
+    is_paid: payable.status === 'paid',
+    paid_date: payable.status === 'paid' ? new Date().toISOString().split('T')[0] : null,
     user_id: userId
   };
 
@@ -540,14 +553,23 @@ export async function createPayable(
     
     console.log('✅ Payable created successfully:', data.id);
     
+    // Determine status based on due date and payment status
+    let status: 'pending' | 'paid' | 'overdue' = 'pending';
+    if (data.is_paid) {
+      status = 'paid';
+    } else if (new Date(data.due_date) < new Date()) {
+      status = 'overdue';
+    }
+    
     return {
       id: data.id,
       description: data.description,
-      amount: data.amount,
+      amount: parseFloat(data.amount),
       dueDate: data.due_date,
-      category: data.category,
-      status: data.status,
-      supplier: data.supplier
+      category: data.category_id || 'geral',
+      status: status,
+      supplier: data.supplier,
+      userId: data.user_id
     };
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
@@ -583,15 +605,26 @@ export async function getPayables(userId: string, getToken: () => Promise<string
     
     console.log('✅ Fetched payables successfully:', data?.length || 0);
     
-    return (data || []).map(item => ({
-      id: item.id,
-      description: item.description,
-      amount: item.amount,
-      dueDate: item.due_date,
-      category: item.category,
-      status: item.status,
-      supplier: item.supplier
-    }));
+    return (data || []).map(item => {
+      // Determine status based on due date and payment status
+      let status: 'pending' | 'paid' | 'overdue' = 'pending';
+      if (item.is_paid) {
+        status = 'paid';
+      } else if (new Date(item.due_date) < new Date()) {
+        status = 'overdue';
+      }
+      
+      return {
+        id: item.id,
+        description: item.description,
+        amount: parseFloat(item.amount),
+        dueDate: item.due_date,
+        category: item.category_id || 'geral',
+        status: status,
+        supplier: item.supplier,
+        userId: item.user_id
+      };
+    });
   } catch (error) {
     if (error instanceof DatabaseError) throw error;
     throw new DatabaseError('Unexpected error fetching payables', undefined, {
@@ -629,8 +662,11 @@ export async function updatePayable(
   if (updates.description) sanitizedUpdates.description = sanitizeInput(updates.description);
   if (updates.amount !== undefined) sanitizedUpdates.amount = updates.amount;
   if (updates.dueDate) sanitizedUpdates.due_date = updates.dueDate;
-  if (updates.category) sanitizedUpdates.category = updates.category;
-  if (updates.status) sanitizedUpdates.status = updates.status;
+  if (updates.category) sanitizedUpdates.category_id = updates.category;
+  if (updates.status !== undefined) {
+    sanitizedUpdates.is_paid = updates.status === 'paid';
+    sanitizedUpdates.paid_date = updates.status === 'paid' ? new Date().toISOString().split('T')[0] : null;
+  }
   if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier ? sanitizeInput(updates.supplier) : null;
 
   try {
@@ -656,14 +692,23 @@ export async function updatePayable(
     
     console.log('✅ Payable updated successfully:', id);
     
+    // Determine status based on due date and payment status
+    let status: 'pending' | 'paid' | 'overdue' = 'pending';
+    if (data.is_paid) {
+      status = 'paid';
+    } else if (new Date(data.due_date) < new Date()) {
+      status = 'overdue';
+    }
+    
     return {
       id: data.id,
       description: data.description,
-      amount: data.amount,
+      amount: parseFloat(data.amount),
       dueDate: data.due_date,
-      category: data.category,
-      status: data.status,
-      supplier: data.supplier
+      category: data.category_id || 'geral',
+      status: status,
+      supplier: data.supplier,
+      userId: data.user_id
     };
   } catch (error) {
     if (error instanceof DatabaseError) throw error;

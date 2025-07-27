@@ -142,15 +142,15 @@ export function TransactionForm({
       
       <CardContent>
         {/* Plan Limits Warning */}
-        {!transaction && planLimits.transactions !== 'unlimited' && (
+        {!transaction && planLimits.transactions !== 'unlimited' && transactions && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center gap-2 text-yellow-800">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-sm font-medium">
-                Plano Gratuito: {transactions.length}/{planLimits.transactions} transações utilizadas
+                Plano Gratuito: {transactions?.length || 0}/{planLimits.transactions} transações utilizadas
               </span>
             </div>
-            {transactions.length >= planLimits.transactions * 0.8 && (
+            {(transactions?.length || 0) >= planLimits.transactions * 0.8 && (
               <p className="text-xs text-yellow-700 mt-1">
                 Você está próximo do limite. Considere fazer upgrade para continuar.
               </p>

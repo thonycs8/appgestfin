@@ -285,7 +285,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         
         await Promise.all([
           loadTransactions(),
-          loadCategories()
+          loadCategories(),
+          loadPayables()
         ]);
         console.log('✅ Initial data loaded successfully');
       } catch (error) {
@@ -374,7 +375,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const updatedTransaction = await updateTransaction(id, updates, user!.id, getToken);
+      const { updateTransaction: updateTransactionDB } = await import('@/lib/database');
+      const updatedTransaction = await updateTransactionDB(id, updates, user!.id, getToken);
       setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
       toast.success('Transação atualizada com sucesso!');
     } catch (error) {
@@ -394,7 +396,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      await deleteTransaction(id, user!.id, getToken);
+      const { deleteTransaction: deleteTransactionDB } = await import('@/lib/database');
+      await deleteTransactionDB(id, user!.id, getToken);
       setTransactions(prev => prev.filter(t => t.id !== id));
       toast.success('Transação excluída com sucesso!');
     } catch (error) {
@@ -477,7 +480,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const updatedCategory = await updateCategory(id, updates, user!.id, getToken);
+      const { updateCategory: updateCategoryDB } = await import('@/lib/database');
+      const updatedCategory = await updateCategoryDB(id, updates, user!.id, getToken);
       setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
@@ -503,7 +507,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      await deleteCategory(id, user!.id, getToken);
+      const { deleteCategory: deleteCategoryDB } = await import('@/lib/database');
+      await deleteCategoryDB(id, user!.id, getToken);
       setCategories(prev => prev.filter(c => c.id !== id));
       toast.success('Categoria excluída com sucesso!');
     } catch (error) {
@@ -664,22 +669,103 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     setGroups(prev => prev.filter(g => g.id !== id));
     toast.success('Grupo excluído com sucesso!');
   };
+  // Carregar contas a pagar
+  const loadPayables = async () => {
+    if (!isInitialized) {
+      console.log('⏳ Payables load skipped - not initialized');
+      return;
+    }
+    
+    // Check if Supabase is configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
+      console.log('📦 Mock mode: Using local payables data');
+      return;
+    }
+    
+    console.log('💳 Loading payables from database...');
+    setLoading(prev => ({ ...prev, payables: true }));
+    try {
+      const { getPayables } = await import('@/lib/database');
+      const result = await getPayables(user!.id, getToken);
+      setPayables(result);
+      console.log('✅ Payables loaded:', result.length);
+    } catch (error) {
+      console.error('❌ Error loading payables:', error);
+      handleError(error, 'carregamento de contas a pagar');
+    } finally {
+      setLoading(prev => ({ ...prev, payables: false }));
+    }
+  };
 
   // Mock implementations for other entities
   const addPayable = async (payable: Omit<Payable, 'id'>) => {
-    const newPayable: Payable = { ...payable, id: Date.now().toString() };
-    setPayables(prev => [newPayable, ...prev]);
-    toast.success('Conta a pagar criada com sucesso!');
+    try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
+        // Mock mode - add to local state
+        const newPayable: Payable = { ...payable, id: Date.now().toString() };
+        setPayables(prev => [newPayable, ...prev]);
+        toast.success('Conta a pagar criada com sucesso! (Modo demonstração)');
+        return;
+      }
+      
+      const { createPayable } = await import('@/lib/database');
+      const newPayable = await createPayable(
+        payable, 
+        user!.id, 
+        user!.emailAddresses[0]?.emailAddress,
+        getToken
+      );
+      setPayables(prev => [newPayable, ...prev]);
+      toast.success('Conta a pagar criada com sucesso!');
+    } catch (error) {
+      handleError(error, 'criação de conta a pagar');
+      throw error;
+    }
   };
 
   const updatePayable = async (id: string, payable: Partial<Payable>) => {
-    setPayables(prev => prev.map(p => p.id === id ? { ...p, ...payable } : p));
-    toast.success('Conta a pagar atualizada com sucesso!');
+    try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
+        // Mock mode - update local state
+        setPayables(prev => prev.map(p => p.id === id ? { ...p, ...payable } : p));
+        toast.success('Conta a pagar atualizada com sucesso! (Modo demonstração)');
+        return;
+      }
+      
+      const { updatePayable: updatePayableDB } = await import('@/lib/database');
+      const updatedPayable = await updatePayableDB(id, payable, user!.id, getToken);
+      setPayables(prev => prev.map(p => p.id === id ? updatedPayable : p));
+      toast.success('Conta a pagar atualizada com sucesso!');
+    } catch (error) {
+      handleError(error, 'atualização de conta a pagar');
+      throw error;
+    }
   };
 
   const deletePayable = async (id: string) => {
-    setPayables(prev => prev.filter(p => p.id !== id));
-    toast.success('Conta a pagar excluída com sucesso!');
+    try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder') || isMockMode) {
+        // Mock mode - remove from local state
+        setPayables(prev => prev.filter(p => p.id !== id));
+        toast.success('Conta a pagar excluída com sucesso! (Modo demonstração)');
+        return;
+      }
+      
+      const { deletePayable: deletePayableDB } = await import('@/lib/database');
+      await deletePayableDB(id, user!.id, getToken);
+      setPayables(prev => prev.filter(p => p.id !== id));
+      toast.success('Conta a pagar excluída com sucesso!');
+    } catch (error) {
+      handleError(error, 'exclusão de conta a pagar');
+      throw error;
+    }
   };
 
   const addInvestment = async (investment: Omit<Investment, 'id'>) => {

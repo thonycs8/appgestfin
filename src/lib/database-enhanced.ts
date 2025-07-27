@@ -121,7 +121,7 @@ class DatabaseService {
         type: item.type,
         category: item.category,
         subcategory: item.subcategory,
-        amount: item.amount,
+        amount: parseFloat(item.amount),
         description: item.description,
         date: item.date,
         status: item.status,
@@ -186,7 +186,7 @@ class DatabaseService {
         type: data.type,
         category: data.category,
         subcategory: data.subcategory,
-        amount: data.amount,
+        amount: parseFloat(data.amount),
         description: data.description,
         date: data.date,
         status: data.status,
@@ -255,7 +255,7 @@ class DatabaseService {
         type: data.type,
         category: data.category,
         subcategory: data.subcategory,
-        amount: data.amount,
+        amount: parseFloat(data.amount),
         description: data.description,
         date: data.date,
         status: data.status,
@@ -454,14 +454,15 @@ class DatabaseService {
       };
 
       data?.forEach(transaction => {
+        const amount = parseFloat(transaction.amount);
         if (transaction.type === 'income') {
-          summary.totalIncome += transaction.amount;
+          summary.totalIncome += amount;
           summary.incomeByCategory[transaction.category] = 
-            (summary.incomeByCategory[transaction.category] || 0) + transaction.amount;
+            (summary.incomeByCategory[transaction.category] || 0) + amount;
         } else {
-          summary.totalExpenses += transaction.amount;
+          summary.totalExpenses += amount;
           summary.expensesByCategory[transaction.category] = 
-            (summary.expensesByCategory[transaction.category] || 0) + transaction.amount;
+            (summary.expensesByCategory[transaction.category] || 0) + amount;
         }
       });
 
