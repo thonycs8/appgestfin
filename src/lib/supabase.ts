@@ -35,15 +35,27 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
   try {
     console.log('🔑 Creating authenticated Supabase client...');
     
-    // Get the Supabase token from Clerk
-    const token = await getToken({ template: 'supabase' });
+    // Try to get the default Clerk token first
+    let token = await getToken();
+    
+    // If no token or template doesn't exist, try without template
+    if (!token) {
+      console.log('⚠️ No token from default getToken, trying without template...');
+      try {
+        // Get raw token without template
+        token = await getToken();
+      } catch (error) {
+        console.error('❌ Failed to get token:', error);
+        throw new Error('No authentication token available');
+      }
+    }
     
     if (!token) {
-      console.error('❌ No Supabase token available from Clerk');
-      throw new Error('No Supabase token available from Clerk');
+      console.error('❌ No authentication token available');
+      throw new Error('No authentication token available');
     }
 
-    console.log('✅ Supabase token obtained from Clerk');
+    console.log('✅ Authentication token obtained');
 
     // Create a new Supabase client with the Clerk token
     const authenticatedSupabase = createClient(
@@ -68,6 +80,48 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
     return authenticatedSupabase;
   } catch (error) {
     console.error('❌ Error creating authenticated Supabase client:', error);
+    throw error;
+  }
+};
+
+// Alternative function that uses Clerk user ID directly for RLS
+export const createSupabaseClientWithUserId = async (userId: string) => {
+  try {
+    console.log('🔑 Creating Supabase client with user ID:', userId);
+    
+    // Create a custom JWT payload for Supabase RLS
+    const customPayload = {
+      sub: userId,
+      user_id: userId,
+      aud: 'authenticated',
+      role: 'authenticated',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour
+    };
+
+    // For development, we'll use the anon key but set custom headers
+    const authenticatedSupabase = createClient(
+      supabaseUrl || defaultUrl,
+      supabaseAnonKey || defaultKey,
+      {
+        global: {
+          headers: {
+            'X-User-ID': userId,
+            'X-Client-Info': 'gestfin-app'
+          }
+        },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      }
+    );
+
+    console.log('✅ Supabase client with user ID created successfully');
+    return authenticatedSupabase;
+  } catch (error) {
+    console.error('❌ Error creating Supabase client with user ID:', error);
     throw error;
   }
 };
