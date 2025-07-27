@@ -102,6 +102,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMockMode, setIsMockMode] = useState(false);
   const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [authRetryCount, setAuthRetryCount] = useState(0);
+  const MAX_AUTH_RETRIES = 3;
 
   const t = (key: TranslationKey): string => {
     return translations[language][key] || key;
@@ -161,25 +163,53 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         }
         
         console.log('🔗 Connecting to Supabase...');
-        await ensureSupabaseAuth();
+        
+        // Try authentication with retry logic
+        let authSuccess = false;
+        for (let i = 0; i < MAX_AUTH_RETRIES && !authSuccess; i++) {
+          try {
+            await ensureSupabaseAuth();
+            authSuccess = true;
+            console.log('✅ Authentication successful on attempt', i + 1);
+          } catch (authError) {
+            console.warn(`⚠️ Auth attempt ${i + 1} failed:`, authError);
+            if (i === MAX_AUTH_RETRIES - 1) {
+              throw authError;
+            }
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+          }
+        }
+        
         console.log('👤 Syncing user to Supabase...');
         await syncUserToSupabase();
+        setAuthRetryCount(0); // Reset retry count on success
         setIsInitialized(true);
         console.log('✅ Authentication and sync completed successfully');
       } catch (error) {
         console.error('❌ Error during authentication initialization:', error);
-        // Don't throw error, just log warning and continue in mock mode
-        console.warn('⚠️ Falling back to mock mode due to auth error');
-        setIsMockMode(true);
-        setIsInitialized(true);
         
-        // Load mock data in mock mode
-        console.log('📦 Loading mock data as fallback...');
-        setTransactions(mockTransactions);
-        setCategories(mockCategories);
-        setPayables(mockPayables);
-        setInvestments(mockInvestments);
-        console.log('✅ Fallback mock data loaded');
+        setAuthRetryCount(prev => prev + 1);
+        
+        if (authRetryCount >= MAX_AUTH_RETRIES) {
+          console.warn('⚠️ Max auth retries reached, falling back to mock mode');
+          setIsMockMode(true);
+          setIsInitialized(true);
+          
+          // Load mock data in mock mode
+          console.log('📦 Loading mock data as fallback...');
+          setTransactions(mockTransactions);
+          setCategories(mockCategories);
+          setPayables(mockPayables);
+          setInvestments(mockInvestments);
+          console.log('✅ Fallback mock data loaded');
+        } else {
+          // Retry initialization after a delay
+          setTimeout(() => {
+            console.log('🔄 Retrying authentication initialization...');
+            initializeAuth();
+          }, 2000);
+        }
       }
     };
 
@@ -189,7 +219,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
   // Carregar informações da assinatura
   useEffect(() => {
     const loadSubscription = async () => {
-      if (!isSignedIn || !user || !isInitialized) {
+      if (!isSignedIn || !user || !isInitialized || isMockMode) {
         console.log('⏳ Skipping subscription load - not ready', { isSignedIn, hasUser: !!user, isInitialized });
         return;
       }
@@ -223,7 +253,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       }
     };
     loadSubscription();
-  }, [isSignedIn, user, isInitialized, getToken]);
+  }, [isSignedIn, user, isInitialized, isMockMode, getToken]);
 
 
   // Inicializar grupos padrão

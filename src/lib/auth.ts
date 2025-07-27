@@ -1,6 +1,6 @@
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useCallback } from 'react';
-import { createAuthenticatedSupabaseClient } from './supabase';
+import { createAuthenticatedSupabaseClient, createSupabaseClientWithUserId } from './supabase';
 
 export interface AuthUser {
   id: string;
@@ -36,7 +36,18 @@ export function useAuthUser() {
 
     try {
       console.log('🔑 Creating authenticated Supabase client...');
-      const authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
+      
+      // Try multiple approaches to get authenticated client
+      let authenticatedSupabase;
+      
+      try {
+        // First try with Clerk token
+        authenticatedSupabase = await createAuthenticatedSupabaseClient(getToken);
+      } catch (tokenError) {
+        console.warn('⚠️ Token approach failed, trying user ID approach:', tokenError);
+        // Fallback to user ID approach
+        authenticatedSupabase = await createSupabaseClientWithUserId(user.id);
+      }
       
       console.log('✅ Supabase authentication successful');
       return authenticatedSupabase;

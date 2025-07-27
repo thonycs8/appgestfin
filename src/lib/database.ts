@@ -1,12 +1,24 @@
-import { createAuthenticatedSupabaseClient, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
+import { createAuthenticatedSupabaseClient, createSupabaseClientWithUserId, checkRateLimit, sanitizeInput, validateAmount, validateDate, RATE_LIMITS } from './supabase';
 import { Transaction, Category, Payable } from '@/types';
 import { DatabaseError, ValidationError, RateLimitError } from '@/lib/errorHandling';
+
+// Helper function to get authenticated Supabase client with fallback
+async function getAuthenticatedClient(userId: string, getToken: () => Promise<string | null>) {
+  try {
+    // Try token-based authentication first
+    return await createAuthenticatedSupabaseClient(getToken);
+  } catch (error) {
+    console.warn('⚠️ Token auth failed, using user ID fallback:', error);
+    // Fallback to user ID based client
+    return await createSupabaseClientWithUserId(userId);
+  }
+}
 
 // Helper function to ensure user exists in database
 async function ensureUserExists(userId: string, userEmail?: string, getToken: () => Promise<string | null>) {
   try {
     console.log('🔧 Ensuring user exists:', userId);
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     
     // First check if user already exists
     const { data: existingUser, error: checkError } = await supabase
@@ -29,7 +41,8 @@ async function ensureUserExists(userId: string, userEmail?: string, getToken: ()
           id: userId,
           clerk_id: userId,
           email: userEmail || `${userId}@clerk.local`,
-          is_active: true
+          is_active: true,
+          role: 'user'
         });
         
       if (insertError) {
@@ -89,7 +102,7 @@ export async function createTransaction(
   try {
     console.log('💾 Inserting transaction into database...');
     
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('transactions')
       .insert([sanitizedTransaction])
@@ -136,7 +149,7 @@ export async function getTransactions(userId: string, getToken: () => Promise<st
   console.log('📊 Fetching transactions for user:', userId);
   
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
@@ -209,7 +222,7 @@ export async function updateTransaction(
   if (updates.status) sanitizedUpdates.status = updates.status;
 
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('transactions')
       .update(sanitizedUpdates)
@@ -257,7 +270,7 @@ export async function deleteTransaction(id: string, userId: string, getToken: ()
   console.log('🗑️ Deleting transaction:', id, 'for user:', userId);
   
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { error } = await supabase
       .from('transactions')
       .delete()
@@ -315,7 +328,7 @@ export async function createCategory(
   try {
     console.log('💾 Inserting category into database...');
     
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('categories')
       .insert([sanitizedCategory])
@@ -360,7 +373,7 @@ export async function getCategories(userId: string, getToken: () => Promise<stri
   console.log('📊 Fetching categories for user:', userId);
   
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('categories')
       .select('*')
@@ -419,7 +432,7 @@ export async function updateCategory(
   if (updates.isActive !== undefined) sanitizedUpdates.is_active = updates.isActive;
 
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('categories')
       .update(sanitizedUpdates)
@@ -465,7 +478,7 @@ export async function deleteCategory(id: string, userId: string, getToken: () =>
   console.log('🗑️ Deleting category:', id, 'for user:', userId);
   
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { error } = await supabase
       .from('categories')
       .delete()
@@ -533,7 +546,7 @@ export async function createPayable(
   try {
     console.log('💾 Inserting payable into database...');
     
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('payables')
       .insert([sanitizedPayable])
@@ -587,7 +600,7 @@ export async function getPayables(userId: string, getToken: () => Promise<string
   console.log('📊 Fetching payables for user:', userId);
   
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('payables')
       .select('*')
@@ -671,7 +684,7 @@ export async function updatePayable(
   if (updates.supplier !== undefined) sanitizedUpdates.supplier = updates.supplier ? sanitizeInput(updates.supplier) : null;
 
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { data, error } = await supabase
       .from('payables')
       .update(sanitizedUpdates)
@@ -726,7 +739,7 @@ export async function deletePayable(id: string, userId: string, getToken: () => 
   console.log('🗑️ Deleting payable:', id, 'for user:', userId);
   
   try {
-    const supabase = await createAuthenticatedSupabaseClient(getToken);
+    const supabase = await getAuthenticatedClient(userId, getToken);
     const { error } = await supabase
       .from('payables')
       .delete()
