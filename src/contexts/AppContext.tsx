@@ -3,20 +3,7 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { translations, Language, TranslationKey } from '@/lib/i18n';
 import { Transaction, Category, Payable, Investment, Group, Budget, FinancialGoal } from '@/types';
 import { useAuthUser } from '@/lib/auth';
-import { 
-  createTransaction, 
-  getTransactions, 
-  updateTransaction, 
-  deleteTransaction,
-  createCategory,
-  getCategories,
-  updateCategory,
-  deleteCategory,
-  createPayable,
-  getPayables,
-  updatePayable,
-  deletePayable
-} from '@/lib/database';
+import * as database from '@/lib/database';
 import { databaseService, TransactionFilters, PaginationOptions } from '@/lib/database-enhanced';
 import { toast } from 'sonner';
 import { getFreePlan } from '@/stripe-config';
@@ -350,6 +337,8 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
       }
       
       const newTransaction = await createTransaction(
+      )
+      const newTransaction = await database.createTransaction(
         transaction, 
         user!.id, 
         user!.emailAddresses[0]?.emailAddress,
@@ -375,8 +364,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const { updateTransaction: updateTransactionDB } = await import('@/lib/database');
-      const updatedTransaction = await updateTransactionDB(id, updates, user!.id, getToken);
+      const updatedTransaction = await database.updateTransaction(id, updates, user!.id, getToken);
       setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
       toast.success('Transação atualizada com sucesso!');
     } catch (error) {
@@ -396,8 +384,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const { deleteTransaction: deleteTransactionDB } = await import('@/lib/database');
-      await deleteTransactionDB(id, user!.id, getToken);
+      await database.deleteTransaction(id, user!.id, getToken);
       setTransactions(prev => prev.filter(t => t.id !== id));
       toast.success('Transação excluída com sucesso!');
     } catch (error) {
@@ -455,7 +442,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const newCategory = await createCategory(
+      const newCategory = await database.createCategory(
         category, 
         user!.id, 
         user!.emailAddresses[0]?.emailAddress,
@@ -480,8 +467,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const { updateCategory: updateCategoryDB } = await import('@/lib/database');
-      const updatedCategory = await updateCategoryDB(id, updates, user!.id, getToken);
+      await database.updateCategory(id, updates, user!.id, getToken);
       setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
@@ -507,8 +493,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const { deleteCategory: deleteCategoryDB } = await import('@/lib/database');
-      await deleteCategoryDB(id, user!.id, getToken);
+      await database.deleteCategory(id, user!.id, getToken);
       setCategories(prev => prev.filter(c => c.id !== id));
       toast.success('Categoria excluída com sucesso!');
     } catch (error) {
@@ -686,8 +671,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
     console.log('💳 Loading payables from database...');
     setLoading(prev => ({ ...prev, payables: true }));
     try {
-      const { getPayables } = await import('@/lib/database');
-      const result = await getPayables(user!.id, getToken);
+      const result = await database.getPayables(user!.id, getToken);
       setPayables(result);
       console.log('✅ Payables loaded:', result.length);
     } catch (error) {
@@ -711,8 +695,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const { createPayable } = await import('@/lib/database');
-      const newPayable = await createPayable(
+      const newPayable = await database.createPayable(
         payable, 
         user!.id, 
         user!.emailAddresses[0]?.emailAddress,
@@ -737,8 +720,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const { updatePayable: updatePayableDB } = await import('@/lib/database');
-      const updatedPayable = await updatePayableDB(id, payable, user!.id, getToken);
+      const updatedPayable = await database.updatePayable(id, payable, user!.id, getToken);
       setPayables(prev => prev.map(p => p.id === id ? updatedPayable : p));
       toast.success('Conta a pagar atualizada com sucesso!');
     } catch (error) {
@@ -758,8 +740,7 @@ export function AppProvider({ children }: { children: ReactNode | ((context: { l
         return;
       }
       
-      const { deletePayable: deletePayableDB } = await import('@/lib/database');
-      await deletePayableDB(id, user!.id, getToken);
+      await database.deletePayable(id, user!.id, getToken);
       setPayables(prev => prev.filter(p => p.id !== id));
       toast.success('Conta a pagar excluída com sucesso!');
     } catch (error) {

@@ -13,10 +13,16 @@ async function ensureUserExists(userId: string, userEmail?: string, getToken: ()
       .from('users')
       .select('id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
       
-    if (checkError || !existingUser) {
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ Error checking user existence:', checkError);
+      throw new DatabaseError(`Failed to check user existence: ${checkError.message}`);
+    }
+      
+    if (!existingUser) {
       // User doesn't exist, create them
+      console.log('👤 Creating new user record...');
       const { error: insertError } = await supabase
         .from('users')
         .insert({
@@ -27,24 +33,18 @@ async function ensureUserExists(userId: string, userEmail?: string, getToken: ()
         });
         
       if (insertError) {
-        console.warn('⚠️ Warning creating user record:', insertError);
+        console.error('❌ Error creating user record:', insertError);
+        throw new DatabaseError(`Failed to create user: ${insertError.message}`);
       } else {
         console.log('✅ Created new user record for:', userId);
-        
-        // Create default categories for new user
-        try {
-          await supabase.rpc('create_default_categories', { p_user_id: userId });
-          console.log('✅ Created default categories for user:', userId);
-        } catch (error) {
-          console.warn('⚠️ Warning creating default categories:', error);
-        }
       }
     } else {
       console.log('✅ User record already exists for:', userId);
     }
   } catch (error) {
-    console.warn('⚠️ Error ensuring user exists:', error);
-    // Don't throw error, just log warning - the RLS policies should handle this
+    if (error instanceof DatabaseError) throw error;
+    console.error('❌ Unexpected error ensuring user exists:', error);
+    throw new DatabaseError('Failed to ensure user exists', undefined, { userId, originalError: error });
   }
 }
 
@@ -115,7 +115,7 @@ export async function createTransaction(
       type: data.type,
       category: data.category,
       subcategory: data.subcategory,
-      amount: parseFloat(data.amount),
+      amount: parseFloat(data.amount.toString()),
       description: data.description,
       date: data.date,
       status: data.status,
@@ -160,7 +160,7 @@ export async function getTransactions(userId: string, getToken: () => Promise<st
       type: item.type,
       category: item.category,
       subcategory: item.subcategory,
-      amount: parseFloat(item.amount),
+      amount: parseFloat(item.amount.toString()),
       description: item.description,
       date: item.date,
       status: item.status,
@@ -236,7 +236,7 @@ export async function updateTransaction(
       type: data.type,
       category: data.category,
       subcategory: data.subcategory,
-      amount: parseFloat(data.amount),
+      amount: parseFloat(data.amount.toString()),
       description: data.description,
       date: data.date,
       status: data.status,
@@ -520,12 +520,13 @@ export async function createPayable(
   await ensureUserExists(userId, userEmail, getToken);
 
   const sanitizedPayable = {
-    description: sanitizeInput(payable.description),
+    title: sanitizeInput(payable.description),
     amount: payable.amount,
     due_date: payable.dueDate,
-    category_id: payable.category ? payable.category : null,
+    category_id: payable.category || null,
     is_paid: payable.status === 'paid',
     paid_date: payable.status === 'paid' ? new Date().toISOString().split('T')[0] : null,
+    supplier: payable.supplier ? sanitizeInput(payable.supplier) : null,
     user_id: userId
   };
 
@@ -563,8 +564,8 @@ export async function createPayable(
     
     return {
       id: data.id,
-      description: data.description,
-      amount: parseFloat(data.amount),
+      description: data.title,
+      amount: parseFloat(data.amount.toString()),
       dueDate: data.due_date,
       category: data.category_id || 'geral',
       status: status,
@@ -616,8 +617,8 @@ export async function getPayables(userId: string, getToken: () => Promise<string
       
       return {
         id: item.id,
-        description: item.description,
-        amount: parseFloat(item.amount),
+        description: item.title,
+        amount: parseFloat(item.amount.toString()),
         dueDate: item.due_date,
         category: item.category_id || 'geral',
         status: status,
@@ -659,7 +660,7 @@ export async function updatePayable(
 
   const sanitizedUpdates: any = {};
   
-  if (updates.description) sanitizedUpdates.description = sanitizeInput(updates.description);
+  if (updates.description) sanitizedUpdates.title = sanitizeInput(updates.description);
   if (updates.amount !== undefined) sanitizedUpdates.amount = updates.amount;
   if (updates.dueDate) sanitizedUpdates.due_date = updates.dueDate;
   if (updates.category) sanitizedUpdates.category_id = updates.category;
@@ -702,8 +703,8 @@ export async function updatePayable(
     
     return {
       id: data.id,
-      description: data.description,
-      amount: parseFloat(data.amount),
+      description: data.title,
+      amount: parseFloat(data.amount.toString()),
       dueDate: data.due_date,
       category: data.category_id || 'geral',
       status: status,

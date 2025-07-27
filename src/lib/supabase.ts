@@ -1,12 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { useAuth } from '@clerk/clerk-react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if environment variables are properly configured
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables not configured. Using mock mode.');
+  console.warn('⚠️ Supabase environment variables not configured. Using mock mode.');
 }
 
 // Use placeholder values if environment variables are not set
@@ -40,6 +39,7 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
     const token = await getToken({ template: 'supabase' });
     
     if (!token) {
+      console.error('❌ No Supabase token available from Clerk');
       throw new Error('No Supabase token available from Clerk');
     }
 
@@ -72,23 +72,195 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
   }
 };
 
-// Hook to get authenticated Supabase client
-export const useSupabase = () => {
-  const { getToken, isSignedIn } = useAuth();
-  
-  const getAuthenticatedClient = async () => {
-    if (!isSignedIn) {
-      throw new Error('User not authenticated');
-    }
-    
-    return createAuthenticatedSupabaseClient(getToken);
+// Database types for better TypeScript support
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string;
+          clerk_id: string;
+          email: string;
+          first_name: string | null;
+          last_name: string | null;
+          username: string | null;
+          avatar_url: string | null;
+          phone: string | null;
+          email_verified: boolean;
+          phone_verified: boolean;
+          role: string;
+          is_active: boolean;
+          last_sign_in_at: string | null;
+          metadata: any;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          clerk_id: string;
+          email: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          username?: string | null;
+          avatar_url?: string | null;
+          phone?: string | null;
+          email_verified?: boolean;
+          phone_verified?: boolean;
+          role?: string;
+          is_active?: boolean;
+          last_sign_in_at?: string | null;
+          metadata?: any;
+        };
+        Update: {
+          first_name?: string | null;
+          last_name?: string | null;
+          username?: string | null;
+          avatar_url?: string | null;
+          phone?: string | null;
+          email_verified?: boolean;
+          phone_verified?: boolean;
+          role?: string;
+          is_active?: boolean;
+          last_sign_in_at?: string | null;
+          metadata?: any;
+          updated_at?: string;
+        };
+      };
+      transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: 'income' | 'expense';
+          category: string;
+          subcategory: string;
+          amount: number;
+          description: string;
+          date: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          type: 'income' | 'expense';
+          category?: string;
+          subcategory?: string;
+          amount: number;
+          description: string;
+          date?: string;
+          status?: string;
+        };
+        Update: {
+          type?: 'income' | 'expense';
+          category?: string;
+          subcategory?: string;
+          amount?: number;
+          description?: string;
+          date?: string;
+          status?: string;
+          updated_at?: string;
+        };
+      };
+      categories: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          description: string | null;
+          color: string;
+          type: 'income' | 'expense';
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          name: string;
+          description?: string | null;
+          color?: string;
+          type: 'income' | 'expense';
+          is_active?: boolean;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          color?: string;
+          type?: 'income' | 'expense';
+          is_active?: boolean;
+          updated_at?: string;
+        };
+      };
+      payables: {
+        Row: {
+          id: string;
+          user_id: string;
+          category_id: string | null;
+          title: string;
+          amount: number;
+          description: string | null;
+          due_date: string;
+          is_paid: boolean;
+          paid_date: string | null;
+          supplier: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          category_id?: string | null;
+          title: string;
+          amount: number;
+          description?: string | null;
+          due_date: string;
+          is_paid?: boolean;
+          paid_date?: string | null;
+          supplier?: string | null;
+        };
+        Update: {
+          category_id?: string | null;
+          title?: string;
+          amount?: number;
+          description?: string | null;
+          due_date?: string;
+          is_paid?: boolean;
+          paid_date?: string | null;
+          supplier?: string | null;
+          updated_at?: string;
+        };
+      };
+    };
+    Views: {
+      stripe_user_subscriptions: {
+        Row: {
+          customer_id: string | null;
+          subscription_id: string | null;
+          subscription_status: string | null;
+          price_id: string | null;
+          current_period_start: number | null;
+          current_period_end: number | null;
+          cancel_at_period_end: boolean | null;
+          payment_method_brand: string | null;
+          payment_method_last4: string | null;
+        };
+      };
+    };
+    Functions: {
+      uid: {
+        Returns: string;
+      };
+      is_authenticated: {
+        Returns: boolean;
+      };
+      create_default_categories: {
+        Args: { p_user_id: string };
+        Returns: void;
+      };
+      get_user_financial_stats: {
+        Returns: any;
+      };
+    };
   };
-  
-  return {
-    supabase,
-    getAuthenticatedClient
-  };
-};
+}
 
 // Rate limiting configuration
 export const RATE_LIMITS = {
