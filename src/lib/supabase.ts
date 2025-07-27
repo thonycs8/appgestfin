@@ -35,17 +35,22 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
   try {
     console.log('🔑 Creating authenticated Supabase client...');
     
-    // Try to get the default Clerk token first
-    let token = await getToken();
+    let token = null;
     
-    // If no token or template doesn't exist, try without template
-    if (!token) {
-      console.log('⚠️ No token from default getToken, trying without template...');
+    // Strategy 1: Try to get Supabase template token
+    try {
+      console.log('🔄 Attempting to get Supabase template token...');
+      token = await getToken({ template: 'supabase' });
+      console.log('✅ Supabase template token obtained');
+    } catch (templateError) {
+      console.warn('⚠️ Supabase template not found, trying default token...', templateError);
+      
+      // Strategy 2: Try default token
       try {
-        // Get raw token without template
         token = await getToken();
-      } catch (error) {
-        console.error('❌ Failed to get token:', error);
+        console.log('✅ Default token obtained');
+      } catch (defaultError) {
+        console.error('❌ Failed to get any token:', defaultError);
         throw new Error('No authentication token available');
       }
     }
@@ -55,7 +60,7 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
       throw new Error('No authentication token available');
     }
 
-    console.log('✅ Authentication token obtained');
+    console.log('✅ Authentication token obtained, creating client...');
 
     // Create a new Supabase client with the Clerk token
     const authenticatedSupabase = createClient(
@@ -65,7 +70,8 @@ export const createAuthenticatedSupabaseClient = async (getToken: () => Promise<
         global: {
           headers: {
             Authorization: `Bearer ${token}`,
-            'X-Client-Info': 'gestfin-app'
+            'X-Client-Info': 'gestfin-app',
+            'apikey': supabaseAnonKey || defaultKey
           }
         },
         auth: {
@@ -90,25 +96,19 @@ export const createSupabaseClientWithUserId = async (userId: string) => {
     console.log('🔑 Creating Supabase client with user ID:', userId);
     
     // Create a custom JWT payload for Supabase RLS
-    const customPayload = {
-      sub: userId,
-      user_id: userId,
-      aud: 'authenticated',
-      role: 'authenticated',
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour
+    const customHeaders = {
+      'X-User-ID': userId,
+      'X-Client-Info': 'gestfin-app',
+      'apikey': supabaseAnonKey || defaultKey
     };
 
-    // For development, we'll use the anon key but set custom headers
+    // Create client with custom headers
     const authenticatedSupabase = createClient(
       supabaseUrl || defaultUrl,
       supabaseAnonKey || defaultKey,
       {
         global: {
-          headers: {
-            'X-User-ID': userId,
-            'X-Client-Info': 'gestfin-app'
-          }
+          headers: customHeaders
         },
         auth: {
           persistSession: false,
@@ -124,6 +124,66 @@ export const createSupabaseClientWithUserId = async (userId: string) => {
     console.error('❌ Error creating Supabase client with user ID:', error);
     throw error;
   }
+};
+
+// Robust authentication function with multiple fallbacks
+export const createRobustSupabaseClient = async (
+  getToken: () => Promise<string | null>,
+  userId?: string
+) => {
+  const strategies = [
+    // Strategy 1: Supabase template token
+    async () => {
+      console.log('🔄 Strategy 1: Supabase template token');
+      const token = await getToken({ template: 'supabase' });
+      return createAuthenticatedSupabaseClient(() => Promise.resolve(token));
+    },
+    
+    // Strategy 2: Default Clerk token
+    async () => {
+      console.log('🔄 Strategy 2: Default Clerk token');
+      return createAuthenticatedSupabaseClient(getToken);
+    },
+    
+    // Strategy 3: User ID based client
+    async () => {
+      if (!userId) throw new Error('User ID required for this strategy');
+      console.log('🔄 Strategy 3: User ID based client');
+      return createSupabaseClientWithUserId(userId);
+    },
+    
+    // Strategy 4: Anonymous client with user context
+    async () => {
+      console.log('🔄 Strategy 4: Anonymous client with user context');
+      return createClient(
+        supabaseUrl || defaultUrl,
+        supabaseAnonKey || defaultKey,
+        {
+          global: {
+            headers: {
+              'X-User-ID': userId || 'anonymous',
+              'X-Client-Info': 'gestfin-app'
+            }
+          }
+        }
+      );
+    }
+  ];
+
+  for (let i = 0; i < strategies.length; i++) {
+    try {
+      const client = await strategies[i]();
+      console.log(`✅ Authentication successful with strategy ${i + 1}`);
+      return client;
+    } catch (error) {
+      console.warn(`⚠️ Strategy ${i + 1} failed:`, error);
+      if (i === strategies.length - 1) {
+        throw new Error('All authentication strategies failed');
+      }
+    }
+  }
+  
+  throw new Error('Authentication failed');
 };
 
 // Database types for better TypeScript support
