@@ -10,6 +10,17 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
+    include: ['@tanstack/react-query', '@tanstack/react-query-devtools'],
     exclude: ['lucide-react'],
   },
+  server: {
+    fs: {
+      strict: false
+    }
+  },
+  build: {
+    commonjsOptions: {
+      include: [/@tanstack\/react-query/, /node_modules/]
+    }
+  }
 });
