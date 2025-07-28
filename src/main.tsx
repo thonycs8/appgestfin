@@ -4,10 +4,35 @@ import { BrowserRouter } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from '@/components/ui/sonner';
 import { AppProvider } from '@/contexts/AppContext';
 import App from './App';
 import './index.css';
+
+// Criar instância do QueryClient
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      gcTime: 10 * 60 * 1000, // 10 minutos (anteriormente cacheTime)
+      retry: (failureCount, error) => {
+        // Não tentar novamente para erros de autenticação
+        if (error && typeof error === 'object' && 'status' in error) {
+          if (error.status === 401 || error.status === 403) {
+            return false;
+          }
+        }
+        return failureCount < 3;
+      },
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 // Criar instância do QueryClient
 const queryClient = new QueryClient({
@@ -145,13 +170,20 @@ if (!isValidClerkKey) {
           <BrowserRouter>
             <AppProvider>
               <App />
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <AppProvider>
+              <App />
               <Toaster />
               {/* DevTools - só aparece em desenvolvimento */}
               <ReactQueryDevtools initialIsOpen={false} />
             </AppProvider>
           </BrowserRouter>
         </QueryClientProvider>
+        </QueryClientProvider>
       </ClerkProvider>
     </React.StrictMode>
   );
+}
+  )
 }
