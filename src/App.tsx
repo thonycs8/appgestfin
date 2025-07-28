@@ -17,6 +17,7 @@ import { Subscription } from '@/pages/Subscription';
 import { SubscriptionSuccess } from '@/pages/SubscriptionSuccess';
 import { SubscriptionCancel } from '@/pages/SubscriptionCancel';
 import { Alerts } from '@/pages/Alerts';
+import { QueryExample } from '@/pages/QueryExample';
 import { TermsOfService } from '@/components/legal/TermsOfService';
 import { PrivacyPolicy } from '@/components/legal/PrivacyPolicy';
 import { GDPRCompliance } from '@/components/legal/GDPRCompliance';
@@ -43,7 +44,8 @@ const pageComponents = {
   'admin-system': AdminSystem,
   'terms': TermsOfService,
   'privacy': PrivacyPolicy,
-  'gdpr': GDPRCompliance
+  'gdpr': GDPRCompliance,
+  'query-example': QueryExample
 };
 
 const pageTitles = {
@@ -65,7 +67,8 @@ const pageTitles = {
     'admin-system': 'Sistema',
     'terms': 'Termos de Serviço',
     'privacy': 'Política de Privacidade',
-    'gdpr': 'Conformidade GDPR'
+    'gdpr': 'Conformidade GDPR',
+    'query-example': 'Exemplo TanStack Query'
   },
   en: {
     dashboard: 'Dashboard',
@@ -85,7 +88,8 @@ const pageTitles = {
     'admin-system': 'System',
     'terms': 'Terms of Service',
     'privacy': 'Privacy Policy',
-    'gdpr': 'GDPR Compliance'
+    'gdpr': 'GDPR Compliance',
+    'query-example': 'TanStack Query Example'
   }
 };
 

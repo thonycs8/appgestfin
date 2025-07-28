@@ -36,7 +36,8 @@ const menuItems = [
   { id: 'investments', label: 'Investimentos', icon: PiggyBank },
   { id: 'alerts', label: 'Alertas', icon: Bell },
   { id: 'management', label: 'Gestão Financeira', icon: Settings },
-  { id: 'subscription', label: 'Assinatura', icon: Crown }
+  { id: 'subscription', label: 'Assinatura', icon: Crown },
+  { id: 'query-example', label: 'TanStack Query', icon: Settings }
 ];
 
 const adminMenuItems = [
